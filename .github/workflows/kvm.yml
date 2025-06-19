@@ -1,0 +1,136 @@
+name: Run secureblue VM
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-test-vm:
+    runs-on: ubuntu-24.04
+    
+    env:
+      VM_NAME: "secureblue"
+      VCPUS: "3"
+      RAM_MB: "8192"
+      STREAM: "stable"
+      VM_IP: "192.168.122.2"
+      VM_INTERFACE: "enp1s0"
+      VM_DNS: "1.1.1.1;1.0.0.1"
+      DISK_GB: "10"
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y qemu-system-x86 libvirt-daemon-system libvirt-clients virtinst podman apparmor-utils
+
+    - name: Configure AppArmor and Libvirt
+      run: |
+        IGNITION_DIR_RULE='owner "/var/lib/libvirt/boot/**" r,'
+        echo "${IGNITION_DIR_RULE}" | sudo tee -a /etc/apparmor.d/abstractions/libvirt-qemu
+        sudo apparmor_parser -r /etc/apparmor.d/usr.sbin.libvirtd
+        sudo systemctl restart libvirtd
+        sudo usermod -aG kvm,libvirt $USER
+
+    - name: Install Butane
+      run: |
+        VERSION="v0.24.0"
+        URL="https://github.com/coreos/butane/releases/download/${VERSION}/butane-x86_64-unknown-linux-gnu"
+        wget -q "${URL}" -O /tmp/butane
+        chmod +x /tmp/butane
+        sudo mv /tmp/butane /usr/local/bin/butane
+
+    - name: Create Ignition Config and Set Permissions
+      env:
+        SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+      run: |
+        IGNITION_DIR="/var/lib/libvirt/boot"
+        IGNITION_FILE="${IGNITION_DIR}/config.ign"
+        sudo mkdir -p "${IGNITION_DIR}"
+
+        cat <<EOF > config.bu
+        variant: fcos
+        version: 1.6.0
+        passwd:
+          users:
+            - name: core
+              ssh_authorized_keys:
+                - "${SSH_PUBLIC_KEY}"
+        storage:
+          files:
+            - path: /etc/NetworkManager/system-connections/static.nmconnection
+              mode: 0600
+              contents:
+                inline: |
+                  [connection]
+                  id=static-${VM_INTERFACE}
+                  type=ethernet
+                  interface-name=${VM_INTERFACE}
+                  [ipv4]
+                  method=manual
+                  addresses=${VM_IP}/24
+                  gateway=192.168.122.1
+                  dns=${VM_DNS}
+                  [ipv6]
+                  method=disabled
+        EOF
+
+        sudo butane --pretty --strict config.bu | sudo tee "${IGNITION_FILE}" > /dev/null
+        sudo chown libvirt-qemu:kvm "${IGNITION_FILE}"
+        sudo chmod 644 "${IGNITION_FILE}"
+
+    - name: Download FCOS Image
+      id: download_image
+      run: |
+        DOWNLOAD_DIR="/tmp"
+        IMAGE_FILENAME=$(sudo podman run --pull=always --rm -v "${DOWNLOAD_DIR}:/data" -w /data \
+          quay.io/coreos/coreos-installer:release download -s $STREAM -p qemu -f qcow2.xz --decompress)
+        TEMP_IMAGE_PATH="${DOWNLOAD_DIR}/${IMAGE_FILENAME}"
+        echo "image_path=${TEMP_IMAGE_PATH}" >> $GITHUB_OUTPUT
+
+    - name: Create and Start VM
+      run: |
+        IGNITION_CONFIG="/var/lib/libvirt/boot/config.ign"
+        IMAGE_PATH="${{ steps.download_image.outputs.image_path }}"
+        IGNITION_DEVICE_ARG=(--qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=${IGNITION_CONFIG}")
+        
+        sudo virt-install \
+          --connect="qemu:///system" \
+          --name="${VM_NAME}" \
+          --vcpus="${VCPUS}" \
+          --memory="${RAM_MB}" \
+          --os-variant="fedora-coreos-$STREAM" \
+          --import \
+          --graphics=none \
+          --disk="size=${DISK_GB},backing_store=${IMAGE_PATH}" \
+          --network network=default \
+          "${IGNITION_DEVICE_ARG[@]}" \
+          --noautoconsole
+
+    - name: Wait VM startup
+      run: |
+        sleep 180
+  
+    - name: Install secureblue and reboot
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        ssh-keyscan -H "${VM_IP}" >> ~/.ssh/known_hosts
+
+        ssh -o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 core@${VM_IP} 'sudo systemctl disable --now zincati; curl -sL https://raw.githubusercontent.com/r3m8/github-actions-secureblue/refs/heads/main/install.sh | sudo bash -s -- --non-interactive --server --zfs; sudo systemctl reboot' || true
+
+    - name: Wait VM reboot
+      run: |
+        sleep 30
+
+    - name: Print secureblue os-release
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      run: |
+        ssh -o ConnectTimeout=200 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 core@${VM_IP} "cat /etc/os-release"
