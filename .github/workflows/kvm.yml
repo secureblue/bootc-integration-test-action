@@ -110,11 +110,11 @@ jobs:
           "${IGNITION_DEVICE_ARG[@]}" \
           --noautoconsole
 
-    - name: Wait VM startup
+    - name: Wait VM Startup
       run: |
         sleep 180
   
-    - name: Install secureblue and reboot
+    - name: Install secureblue and Reboot
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       run: |
@@ -125,7 +125,7 @@ jobs:
 
         ssh -o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 core@${VM_IP} 'sudo systemctl disable --now zincati; curl -sL https://raw.githubusercontent.com/r3m8/github-actions-secureblue/refs/heads/main/install.sh | sudo bash -s -- --non-interactive --server --zfs; sudo systemctl reboot' || true
 
-    - name: Wait VM reboot
+    - name: Wait VM Reboot
       run: |
         sleep 30
 
