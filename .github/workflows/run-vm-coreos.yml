@@ -119,10 +119,8 @@ jobs:
           IGNITION_FILE="${IGNITION_DIR}/config.ign"
           sudo mkdir -p "${IGNITION_DIR}"
 
-          # Reformat DNS list from semicolon-separated to comma-separated for nmconnection file
           DNS_FORMATTED=$(echo "${{ inputs.vm-dns-servers }}" | tr ';' ',')
 
-          # Create Butane config from inputs
           cat <<EOF > config.bu
           variant: fcos
           version: ${{ inputs.butane-spec-version }}
@@ -158,8 +156,8 @@ jobs:
         id: download_image
         run: |
           DOWNLOAD_DIR="/tmp"
-          IMAGE_FILENAME=$(sudo podman run --pull=always --rm -v "${DOWNLOAD_DIR}:/data" -w /data \
-            quay.io/coreos/coreos-installer:release download -s ${{ inputs.stream }} -p qemu -f qcow2.xz --decompress)
+          IMAGE_FILENAME=$(basename "$(sudo podman run --pull=always --rm -v "${DOWNLOAD_DIR}:/data" -w /data \
+            quay.io/coreos/coreos-installer:release download -s ${{ inputs.stream }} -p qemu -f qcow2.xz --decompress)")
           TEMP_IMAGE_PATH="${DOWNLOAD_DIR}/${IMAGE_FILENAME}"
           echo "image_path=${TEMP_IMAGE_PATH}" >> $GITHUB_OUTPUT
 
@@ -193,7 +191,6 @@ jobs:
           echo "${{ secrets.ssh-private-key }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           
-          # Wait for SSH to be available
           echo "Waiting for SSH port to be open on ${{ inputs.vm-ip }}..."
           for i in {1..30}; do nc -z ${{ inputs.vm-ip }} 22 && break || sleep 5; done
 
