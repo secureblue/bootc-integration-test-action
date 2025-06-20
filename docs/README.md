@@ -66,7 +66,7 @@ This is a specialized workflow for launching Fedora CoreOS virtual machines, and
 
 ### Usage
 
-This workflow requires `ssh-public-key` and `ssh-private-key` to be configured as repository secrets. Don't use these keys elsewhere, **they must be dedicated to your depot**.
+This workflow requires `ssh-public-key` and `ssh-private-key` to be configured as repository secrets. Don't use these keys elsewhere, **they must be dedicated to your Github repository**.
 
 ```yaml
 # .github/workflows/deploy-coreos-vm.yml
