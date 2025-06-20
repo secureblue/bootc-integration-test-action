@@ -1,7 +1,4 @@
-# Run KVM Virtual Machine in GitHub Actions
-
-[![Discord](https://img.shields.io/discord/1202086019298500629?style=flat&logo=discord&logoColor=white&label=Discord&labelColor=%235F6AE9&color=%2333CB56)](https://discord.com/invite/qMTv5cKfbF)
-[![Donate](https://img.shields.io/badge/Donate-blue.svg)](https://secureblue.dev/donate)
+# bootc-virtual-machine-action
 
 This repository provides generic GitHub Actions workflows for creating and running KVM virtual machines on GitHub-hosted runners.
 
