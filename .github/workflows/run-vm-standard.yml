@@ -50,9 +50,9 @@ jobs:
       - name: 'Install Dependencies'
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends qemu-system-x86 libvirt-daemon-system libvirt-clients virtinst wget
+          sudo apt-get install -y qemu-system-x86 libvirt-daemon-system libvirt-clients virtinst wget
           if [ -n "${{ inputs.additional-packages }}" ]; then
-            sudo apt-get install -y --no-install-recommends ${{ inputs.additional-packages }}
+            sudo apt-get install -y ${{ inputs.additional-packages }}
           fi
 
       - name: 'Configure Libvirt and AppArmor'
