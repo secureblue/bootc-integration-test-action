@@ -171,9 +171,9 @@ runs:
           --noautoconsole
 
     - name: 'Wait for VM Startup'
+      if: ${{ inputs.startup-wait-seconds > 0 }}
       env:
         STARTUP_WAIT_SECONDS: ${{ inputs.startup-wait-seconds }}
-      if: ${{ STARTUP_WAIT_SECONDS > 0 }}
       shell: bash
       run: |
         echo "Waiting ${STARTUP_WAIT_SECONDS} seconds for the VM to start..."
