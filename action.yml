@@ -1,0 +1,213 @@
+name: 'Run bootc image VM with Ignition'
+description: 'A generic workflow to launch a bootc image VM configured with Butane/Ignition and optional post-install steps.'
+
+on:
+  workflow_call:
+    inputs:
+      registry:
+        description: 'Registry for the image. Example: ghcr.io/secureblue'
+        required: true
+        type: string
+      image:
+        description: 'Image name for the VM. Example: silverblue-main-hardened'
+        required: true
+        type: string
+      runner:
+        description: 'Runner for the job. Examples: ubuntu-latest, ubuntu-24.04.'
+        default: 'ubuntu-latest'
+        required: false
+        type: string
+      vm-name:
+        description: 'Name for the virtual machine and its disk in libvirt.'
+        default: 'vm-bootc'
+        required: false
+        type: string
+      vcpus:
+        description: 'Number of virtual CPUs for the VM. Must be less than the runner CPUs.'
+        default: 3
+        required: false
+        type: number
+      memory-mb:
+        description: 'Amount of RAM in MB for the VM. Must be less than the runner memory.'
+        default: 8192
+        required: false
+        type: number
+      disk-size-gb:
+        description: 'Size (in GB) of the virtual machine disk. Must be less than runner disk space.'
+        default: 10
+        required: false
+        type: number
+      
+      stream:
+        description: 'Fedora CoreOS stream to use (e.g., stable, testing, next).'
+        default: 'stable'
+        required: false
+        type: string
+      butane-version:
+        description: 'Version of Butane tool to install.'
+        default: 'v0.24.0'
+        required: false
+        type: string
+      butane-spec-version:
+        description: 'Version of the Butane/Ignition spec to use in the config file.'
+        default: '1.6.0'
+        required: false
+        type: string
+      
+      vm-ip:
+        description: 'Static IP address for the VM on the default 192.168.122.0/24 network.'
+        default: '192.168.122.2'
+        required: false
+        type: string
+      vm-interface:
+        description: 'Network interface inside the VM to configure (e.g., enp1s0).'
+        default: 'enp1s0'
+        required: false
+        type: string
+      vm-dns-servers:
+        description: 'Semicolon-separated list of DNS servers for the VM.'
+        default: '1.1.1.1;1.0.0.1'
+        required: false
+        type: string
+
+      startup-wait-seconds:
+        description: 'Time in seconds to wait after VM startup. Recommended: 180 for complex setups.'
+        default: 180
+        required: false
+        type: number
+      post-install-commands:
+        description: 'Multi-line script of commands to execute on the VM via SSH after it boots.'
+        required: false
+        type: string
+      additional-packages:
+        description: 'Space-separated list of additional apt packages to install on the runner.'
+        required: false
+        type: string
+
+    secrets:
+      ssh-public-key:
+        description: 'Public SSH key to inject into the VM for the "core" user.'
+        required: true
+      ssh-private-key:
+        description: 'Private SSH key used to connect to the VM for post-install commands.'
+        required: true
+
+jobs:
+  run-vm:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: 'Checkout code'
+        uses: actions/checkout@v4
+      
+      - name: 'Install Dependencies'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-x86 libvirt-daemon-system libvirt-clients virtinst podman apparmor-utils wget
+          if [ -n "${{ inputs.additional-packages }}" ]; then
+            sudo apt-get install -y ${{ inputs.additional-packages }}
+          fi
+
+      - name: 'Configure Libvirt and AppArmor'
+        run: |
+          echo 'owner "/var/lib/libvirt/boot/**" r,' | sudo tee -a /etc/apparmor.d/abstractions/libvirt-qemu
+          sudo apparmor_parser -r /etc/apparmor.d/usr.sbin.libvirtd
+          sudo systemctl restart libvirtd
+          sudo usermod -aG kvm,libvirt $USER
+
+      - name: 'Install Butane'
+        run: |
+          URL="https://github.com/coreos/butane/releases/download/${{ inputs.butane-version }}/butane-x86_64-unknown-linux-gnu"
+          wget -q "${URL}" -O /tmp/butane
+          chmod +x /tmp/butane
+          sudo mv /tmp/butane /usr/local/bin/butane
+
+      - name: 'Create Ignition Config'
+        run: |
+          IGNITION_DIR="/var/lib/libvirt/boot"
+          IGNITION_FILE="${IGNITION_DIR}/config.ign"
+          sudo mkdir -p "${IGNITION_DIR}"
+
+          DNS_FORMATTED=$(echo "${{ inputs.vm-dns-servers }}" | tr ';' ',')
+
+          cat <<EOF > config.bu
+          variant: fcos
+          version: ${{ inputs.butane-spec-version }}
+          passwd:
+            users:
+              - name: core
+                ssh_authorized_keys:
+                  - "${{ secrets.ssh-public-key }}"
+          storage:
+            files:
+              - path: /etc/NetworkManager/system-connections/static.nmconnection
+                mode: 0600
+                contents:
+                  inline: |
+                    [connection]
+                    id=static-${{ inputs.vm-interface }}
+                    type=ethernet
+                    interface-name=${{ inputs.vm-interface }}
+                    [ipv4]
+                    method=manual
+                    addresses=${{ inputs.vm-ip }}/24
+                    gateway=192.168.122.1
+                    dns=\${DNS_FORMATTED}
+                    [ipv6]
+                    method=disabled
+          EOF
+
+          sudo butane --pretty --strict config.bu | sudo tee "${IGNITION_FILE}" > /dev/null
+          sudo chown libvirt-qemu:kvm "${IGNITION_FILE}"
+          sudo chmod 644 "${IGNITION_FILE}"
+
+      - name: 'Download FCOS Image'
+        id: download_image
+        run: |
+          DOWNLOAD_DIR="/tmp"
+          IMAGE_FILENAME=$(basename "$(sudo podman run --pull=always --rm -v "${DOWNLOAD_DIR}:/data" -w /data \
+            quay.io/coreos/coreos-installer:release download -s ${{ inputs.stream }} -p qemu -f qcow2.xz --decompress)")
+          TEMP_IMAGE_PATH="${DOWNLOAD_DIR}/${IMAGE_FILENAME}"
+          echo "image_path=${TEMP_IMAGE_PATH}" >> $GITHUB_OUTPUT
+
+      - name: 'Create and Start VM'
+        run: |
+          IGNITION_CONFIG="/var/lib/libvirt/boot/config.ign"
+          IGNITION_DEVICE_ARG=(--qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=${IGNITION_CONFIG}")
+          sudo virt-install \
+            --connect="qemu:///system" \
+            --name="${{ inputs.vm-name }}" \
+            --vcpus="${{ inputs.vcpus }}" \
+            --memory="${{ inputs.memory-mb }}" \
+            --os-variant="fedora-coreos-${{ inputs.stream }}" \
+            --import \
+            --graphics=none \
+            --disk="size=${{ inputs.disk-size-gb }},backing_store=${{ steps.download_image.outputs.image_path }}" \
+            --network network=default \
+            "${IGNITION_DEVICE_ARG[@]}" \
+            --noautoconsole
+
+      - name: 'Wait for VM Startup'
+        if: ${{ inputs.startup-wait-seconds > 0 }}
+        run: |
+          echo "Waiting ${{ inputs.startup-wait-seconds }} seconds for the VM to start..."
+          sleep ${{ inputs.startup-wait-seconds }}
+      
+      - name: 'Rebase'
+        run: |
+
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ssh-private-key }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          
+          echo "Waiting for SSH port to be open on ${{ inputs.vm-ip }}..."
+          for i in {1..30}; do nc -z ${{ inputs.vm-ip }} 22 && break || sleep 5; done
+
+          ssh-keyscan -H "${{ inputs.vm-ip }}" >> ~/.ssh/known_hosts
+          ssh -o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 core@${{ inputs.vm-ip }} rpm-ostree rebase ostree-image-signed:docker://{{ inputs.registry}}/{{ inputs.image}}:latest'
+
+      - name: 'Run Post-Install Commands'
+        if: ${{ inputs.post-install-commands != '' }}
+        run: |
+
+          echo "Executing post-install commands..."
+          ssh -o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 core@${{ inputs.vm-ip }} '${{ inputs.post-install-commands }}'
