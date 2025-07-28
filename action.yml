@@ -96,8 +96,10 @@ jobs:
   run-vm:
     runs-on: ${{ inputs.runner }}
     steps:
-      - name: 'Checkout code'
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       
       - name: 'Install Dependencies'
         run: |
