@@ -127,7 +127,7 @@ runs:
                   method=manual
                   addresses=${VM_IP}/24
                   gateway=192.168.122.1
-                  dns=\${DNS_FORMATTED}
+                  dns=${DNS_FORMATTED}
                   [ipv6]
                   method=disabled
         EOF
