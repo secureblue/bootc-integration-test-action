@@ -40,10 +40,6 @@ inputs:
     description: 'Network interface inside the VM to configure (e.g., enp1s0).'
     default: 'enp1s0'
     required: false
-  vm-dns-servers:
-    description: 'Semicolon-separated list of DNS servers for the VM.'
-    default: '1.1.1.1;1.0.0.1'
-    required: false
   startup-wait-seconds:
     description: 'Time in seconds to wait after VM startup. Recommended: 180 for complex setups.'
     default: 180
@@ -93,7 +89,6 @@ runs:
     - name: 'Create Ignition Config'
       shell: bash
       env:
-        VM_DNS_SERVERS: ${{ inputs.vm-dns-servers }}
         VM_INTERFACE: ${{ inputs.vm-interface }}
         VM_IP: ${{ inputs.vm-ip }}
         BUTANE_SPEC_VERSION: ${{ inputs.butane-spec-version }}
@@ -102,8 +97,6 @@ runs:
         IGNITION_FILE="${IGNITION_DIR}/config.ign"
         sudo mkdir -p "${IGNITION_DIR}"
         SSH_PUBLIC_KEY=$(cat ~/.ssh/id_ed25519.pub)
-
-        DNS_FORMATTED=$(echo "${VM_DNS_SERVERS}" | tr ';' ',')
 
         cat <<EOF > config.bu
         variant: fcos
@@ -127,7 +120,7 @@ runs:
                   method=manual
                   addresses=${VM_IP}/24
                   gateway=192.168.122.1
-                  dns=${DNS_FORMATTED}
+                  dns=1.1.1.1
                   [ipv6]
                   method=disabled
         EOF

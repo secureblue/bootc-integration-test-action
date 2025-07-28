@@ -51,5 +51,4 @@ jobs:
 | `butane-spec-version`  | Version of the Butane/Ignition spec to use in the config file.                 | string | No       | `1.6.0`         |
 | `vm-ip`                | Static IP for the VM on `192.168.122.0/24` network.                            | string | No       | `192.168.122.2` |
 | `vm-interface`         | Network interface inside the VM to configure (e.g., `enp1s0`).                 | string | No       | `enp1s0`        |
-| `vm-dns-servers`       | Semicolon-separated list of DNS servers for the VM.                            | string | No       | `1.1.1.1;1.0.0.1` |
 | `startup-wait-seconds` | Time in seconds to wait after VM startup, before running post-install commands.| number | No       | `180`           |
