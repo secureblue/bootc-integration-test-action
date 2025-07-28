@@ -190,7 +190,7 @@ runs:
         for i in {1..30}; do nc -z ${VM_IP} 22 && break || sleep 5; done
 
         ssh-keyscan -H "${VM_IP}" >> ~/.ssh/known_hosts
-        ssh -o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 core@${VM_IP} rpm-ostree rebase "ostree-image-signed:docker://${REGISTRY}/${IMAGE}:latest" && reboot
+        ssh -o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 core@${VM_IP} rpm-ostree rebase --bypass-driver "ostree-image-signed:docker://${REGISTRY}/${IMAGE}:latest" && reboot
 
     - name: 'Run Post-Install Commands'
       shell: bash
@@ -225,7 +225,6 @@ runs:
           exit 1
         fi
 
-  
     - name: Upload Test Logs
       if: always()
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
