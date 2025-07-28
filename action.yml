@@ -52,14 +52,6 @@ inputs:
     description: 'List of test scripts to execute on the VM via SSH after it boots. Exit code determines test status.'
     required: true
 
-secrets:
-  ssh-public-key:
-    description: 'Public SSH key to inject into the VM for the "core" user.'
-    required: true
-  ssh-private-key:
-    description: 'Private SSH key used to connect to the VM for post-install commands.'
-    required: true
-
 runs:
   using: "composite"
   steps:
@@ -92,18 +84,24 @@ runs:
         chmod +x /tmp/butane
         sudo mv /tmp/butane /usr/local/bin/butane
 
+    - name: Generate SSH Keypair
+      shell: bash
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
+
     - name: 'Create Ignition Config'
       shell: bash
       env:
         VM_DNS_SERVERS: ${{ inputs.vm-dns-servers }}
         VM_INTERFACE: ${{ inputs.vm-interface }}
         VM_IP: ${{ inputs.vm-ip }}
-        SSH_PUBLIC_KEY: ${{ secrets.ssh-public-key }}
         BUTANE_SPEC_VERSION: ${{ inputs.butane-spec-version }}
       run: |
         IGNITION_DIR="/var/lib/libvirt/boot"
         IGNITION_FILE="${IGNITION_DIR}/config.ign"
         sudo mkdir -p "${IGNITION_DIR}"
+        SSH_PUBLIC_KEY=$(cat ~/.ssh/id_ed25519.pub)
 
         DNS_FORMATTED=$(echo "${VM_DNS_SERVERS}" | tr ';' ',')
 
@@ -184,15 +182,10 @@ runs:
     - name: 'Rebase'
       shell: bash
       env:
-        SSH_PRIVATE_KEY: ${{ secrets.ssh-private-key }}
         VM_IP: ${{ inputs.vm-ip }}
         REGISTRY: ${{ inputs.registry }}
         IMAGE: ${{ inputs.image }}
       run: |
-        mkdir -p ~/.ssh
-        echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_ed25519
-        chmod 600 ~/.ssh/id_ed25519
-        
         echo "Waiting for SSH port to be open on ${VM_IP}..."
         for i in {1..30}; do nc -z ${VM_IP} 22 && break || sleep 5; done
 
@@ -219,8 +212,8 @@ runs:
           REMOTE_PATH="/home/core/${BASENAME}"
           LOG_FILE="test-logs/${BASENAME}.log"
 
-          scp "$SSH_OPTS" "$TEST_FILE" core@$VM_IP:"$REMOTE_PATH"
-          ssh "$SSH_OPTS" core@$VM_IP "chmod +x $REMOTE_PATH && $REMOTE_PATH" > "$LOG_FILE" 2>&1
+          scp $SSH_OPTS "$TEST_FILE" core@$VM_IP:"$REMOTE_PATH"
+          ssh $SSH_OPTS core@$VM_IP "chmod +x $REMOTE_PATH && $REMOTE_PATH" > "$LOG_FILE" 2>&1
           TEST_EXIT_CODE=$?
           if [[ $TEST_EXIT_CODE -ne 0 ]]; then
             echo "Test $TEST_FILE failed"
