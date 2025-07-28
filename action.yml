@@ -49,8 +49,8 @@ inputs:
     default: 180
     required: false
   tests:
-    description: 'Multi-line script of tests to execute on the VM via SSH after it boots.'
-    required: false
+    description: 'List of test scripts to execute on the VM via SSH after it boots. Exit code determines test status.'
+    required: true
 
 secrets:
   ssh-public-key:
@@ -197,15 +197,46 @@ runs:
         for i in {1..30}; do nc -z ${VM_IP} 22 && break || sleep 5; done
 
         ssh-keyscan -H "${VM_IP}" >> ~/.ssh/known_hosts
-        ssh -o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 core@${VM_IP} rpm-ostree rebase "ostree-image-signed:docker://${REGISTRY}/${IMAGE}:latest"
+        ssh -o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 core@${VM_IP} rpm-ostree rebase "ostree-image-signed:docker://${REGISTRY}/${IMAGE}:latest" && reboot
 
     - name: 'Run Post-Install Commands'
       shell: bash
       env:
         VM_IP: ${{ inputs.vm-ip }}
         TESTS: ${{ inputs.tests }}
-      if: ${{ inputs.post-install-commands != '' }}
       run: |
+        echo "Running tests..."
+        mkdir test-logs
+        IFS=$'\n' read -d '' -r -a TEST_LIST <<< "$TESTS"
 
-        echo "Executing post-install commands..."
-        ssh -o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 core@${VM_IP} '${TESTS}'
+
+        FAILED_TESTS=0
+        SSH_OPTS="-o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519"
+
+        for TEST_FILE in "${TEST_LIST[@]}"; do
+          echo "Running test: $TEST_FILE"
+          BASENAME=$(basename "$TEST_FILE")
+          REMOTE_PATH="/home/core/${BASENAME}"
+          LOG_FILE="test-logs/${BASENAME}.log"
+
+          scp "$SSH_OPTS" "$TEST_FILE" core@$VM_IP:"$REMOTE_PATH"
+          ssh "$SSH_OPTS" core@$VM_IP "chmod +x $REMOTE_PATH && $REMOTE_PATH" > "$LOG_FILE" 2>&1
+          TEST_EXIT_CODE=$?
+          if [[ $TEST_EXIT_CODE -ne 0 ]]; then
+            echo "Test $TEST_FILE failed"
+            (( FAILED_TESTS++ ))
+          fi
+        done
+
+        if [[ $FAILED_TESTS -gt 0 ]]; then
+          exit 1
+        fi
+
+  
+    - name: Upload Test Logs
+      if: always()
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: test-logs
+        path: test-logs/
+        retention-days: 7
