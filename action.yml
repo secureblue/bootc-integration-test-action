@@ -153,14 +153,17 @@ runs:
       env:
         DISK_SIZE_GB: ${{ inputs.disk-size-gb }}
         IMAGE_PATH: ${{ steps.download_image.outputs.image_path }}
+        VM_NAME: ${{ inputs.vm-name }}
+        VCPU: ${{ inputs.vcpus }}
+        MEMORY_MB: ${{ inputs.memory-mb }}
       run: |
         IGNITION_CONFIG="/var/lib/libvirt/boot/config.ign"
         IGNITION_DEVICE_ARG=(--qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=${IGNITION_CONFIG}")
         sudo virt-install \
           --connect="qemu:///system" \
-          --name="${{ inputs.vm-name }}" \
-          --vcpus="${{ inputs.vcpus }}" \
-          --memory="${{ inputs.memory-mb }}" \
+          --name="${VM_NAME}" \
+          --vcpus="${VCPU}" \
+          --memory="${MEMORY_MB}" \
           --os-variant="fedora-coreos-testing" \
           --import \
           --graphics=none \
