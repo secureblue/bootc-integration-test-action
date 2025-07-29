@@ -58,6 +58,8 @@ runs:
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         persist-credentials: false
+        repository: secureblue/bootc-integration-test-action
+        path: bootc-integration-test-action
     
     - name: 'Install Dependencies'
       shell: bash
@@ -181,7 +183,7 @@ runs:
         STARTUP_WAIT_SECONDS: ${{ inputs.startup-wait-seconds }}
         VM_IP: ${{ inputs.vm-ip }}
         REGISTRY: ${{ inputs.registry }}
-        UNMASK_SSHD_FILE: "${{ github.workspace }}/unmask-sshd.service"
+        UNMASK_SSHD_FILE: "${{ github.workspace }}/bootc-integration-test-action/unmask-sshd.service"
         IMAGE: ${{ inputs.image }}
       run: |
         echo "Waiting for SSH port to be open on ${VM_IP}..."
