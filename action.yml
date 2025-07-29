@@ -197,7 +197,7 @@ runs:
         ssh $SSH_OPTS core@${VM_IP} "sudo cp /tmp/unmask-sshd.service /etc/systemd/system/unmask-sshd.service && sudo systemctl daemon-reload && sudo systemctl enable unmask-sshd.service"
 
         set +e
-        ssh $SSH_OPTS core@${VM_IP} "sudo rpm-ostree rebase --bypass-driver ostree-unverified-registry:${REGISTRY}/${IMAGE}:latest && sudo reboot"
+        ssh $SSH_OPTS core@${VM_IP} "sudo rpm-ostree rebase --reboot --bypass-driver ostree-unverified-registry:${REGISTRY}/${IMAGE}:latest"
         SSH_EXIT_CODE=$?
         set -e
         if [[ $SSH_EXIT_CODE -eq 255 ]]; then
