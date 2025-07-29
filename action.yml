@@ -189,7 +189,7 @@ runs:
         SSH_OPTS="-o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519"
 
         ssh-keyscan -H "${VM_IP}" >> ~/.ssh/known_hosts
-        UNMASK_SSHD_FILE="./unmask-sshd.service"
+        UNMASK_SSHD_FILE="${{ github.workspace }}/unmask-sshd.service"
 
         scp $SSH_OPTS "$UNMASK_SSHD_FILE" core@$VM_IP:/tmp/unmask-sshd.service
         ssh $SSH_OPTS core@${VM_IP} sudo cp /tmp/unmask-sshd.service /etc/systemd/system/unmask-sshd.service && sudo systemctl daemon-reload && sudo systemctl enable unmask-sshd.service
