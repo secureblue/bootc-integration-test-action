@@ -204,10 +204,14 @@ runs:
         TESTS: ${{ inputs.tests }}
       run: |
         echo "Running tests..."
+
+        if [[ -z "$TESTS" ]]; then
+          echo "Tests missing..."
+          exit 1
+        fi
+
+        mapfile -t TEST_LIST <<< "$TESTS"
         mkdir test-logs
-        IFS=$'\n' read -d '' -r -a TEST_LIST <<< "$TESTS"
-
-
         FAILED_TESTS=0
         SSH_OPTS="-o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519"
 
