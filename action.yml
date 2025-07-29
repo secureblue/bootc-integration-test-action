@@ -173,7 +173,7 @@ runs:
       shell: bash
       run: |
         echo "Waiting ${STARTUP_WAIT_SECONDS} seconds for the VM to start..."
-        sleep ${STARTUP_WAIT_SECONDS}
+        sleep "${STARTUP_WAIT_SECONDS}"
     
     - name: 'Rebase'
       shell: bash
@@ -192,6 +192,8 @@ runs:
         set -e
         if [[ $SSH_EXIT_CODE -eq 255 ]]; then
           echo "SSH connection closed due to bootc apply."
+          echo "Waiting ${STARTUP_WAIT_SECONDS} seconds for the VM to restart..."
+          sleep "${STARTUP_WAIT_SECONDS}"
           exit 0
         else
           exit $SSH_EXIT_CODE
