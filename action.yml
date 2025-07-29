@@ -183,7 +183,7 @@ runs:
         for i in {1..30}; do nc -z ${VM_IP} 22 && break || sleep 5; done
 
         ssh-keyscan -H "${VM_IP}" >> ~/.ssh/known_hosts
-        ssh -o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 core@${VM_IP} sudo rpm-ostree rebase --bypass-driver "ostree-image-signed:docker://${REGISTRY}/${IMAGE}:latest" && reboot
+        ssh -o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 core@${VM_IP} sudo bootc switch --apply "${REGISTRY}/${IMAGE}:latest"
 
     - name: 'Run Post-Install Commands'
       shell: bash
