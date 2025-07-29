@@ -1,10 +1,11 @@
 [Unit]
 Description=Unmask and start sshd
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=systemctl unmask sshd && systemctl enable --now sshd
+ExecStart=/bin/bash -c 'systemctl unmask sshd && systemctl enable --now sshd'
 
 [Install]
 WantedBy=multi-user.target
