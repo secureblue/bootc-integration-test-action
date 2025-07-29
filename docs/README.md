@@ -28,13 +28,6 @@ jobs:
         ./tests/validate-config.sh
 ```
 
-  registry:
-    description: 'Registry for the image. Example: ghcr.io/secureblue'
-    required: true
-  image:
-    description: 'Image name for the VM. Example: silverblue-main-hardened'
-    required: true
-
 ### Inputs
 
 | Input                  | Description                                                                    | Type   | Required | Default         |
