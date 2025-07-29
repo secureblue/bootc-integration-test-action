@@ -207,7 +207,7 @@ runs:
         EOD
 
         scp $SSH_OPTS "$UNMASK_SSHD_FILE" core@$VM_IP:"$UNMASK_SSHD_REMOTE_TMP_FILE"
-        ssh $SSH_OPTS core@${VM_IP} sudo cp "UNMASK_SSHD_REMOTE_TMP_FILE" '/etc/systemd/system/unmask-sshd.service' && sudo systemctl daemon-reload && sudo systemctl enable unmask-sshd.service
+        ssh $SSH_OPTS core@${VM_IP} sudo cp "UNMASK_SSHD_REMOTE_TMP_FILE" /etc/systemd/system/unmask-sshd.service && sudo systemctl daemon-reload && sudo systemctl enable unmask-sshd.service
 
         set +e
         ssh $SSH_OPTS core@${VM_IP} sudo bootc switch --apply "${REGISTRY}/${IMAGE}:latest"
