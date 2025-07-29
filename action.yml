@@ -22,7 +22,7 @@ inputs:
     required: false
   disk-size-gb:
     description: 'Size (in GB) of the virtual machine disk. Must be less than runner disk space.'
-    default: 10
+    default: 20
     required: false
   butane-version:
     description: 'Version of Butane tool to install.'
