@@ -6,7 +6,7 @@ This repository provides a generic GitHub Action for creating KVM virtual machin
 
 Workflows use KVM and `libvirt`, the standard Linux virtualization stack. The runner's user is added to groups enabling him or her to interact with the virtualization stack. By default, Ubuntu images include AppArmor, which is specially configured to run in Github-hosted runnners, requiring the adaptation of specific rules to authorize the addition of the ignition file for CoreOS deployments.
 
-### Usage
+## Usage
 
 ```yaml
 # .github/workflows/integration-tests.yml
