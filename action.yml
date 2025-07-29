@@ -186,9 +186,31 @@ runs:
         echo "Waiting for SSH port to be open on ${VM_IP}..."
         for i in {1..30}; do nc -z ${VM_IP} 22 && break || sleep 5; done
 
+        SSH_OPTS="-o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519"
+
         ssh-keyscan -H "${VM_IP}" >> ~/.ssh/known_hosts
+        UNMASK_SSHD_FILE="./unmask-sshd.service"
+
+        UNMASK_SSHD_REMOTE_TMP_FILE="/tmp/unmask-sshd.service"
+        tee "$UNMASK_SSHD_FILE" > /dev/null <<EOD
+        [Unit]
+        Description=Unmask and start sshd
+        After=network.target
+
+        [Service]
+        Type=oneshot
+        ExecStart=systemctl unmask sshd
+        ExecStart=systemctl enable --now sshd
+
+        [Install]
+        WantedBy=multi-user.target
+        EOD
+
+        scp $SSH_OPTS "$UNMASK_SSHD_FILE" core@$VM_IP:"$UNMASK_SSHD_REMOTE_TMP_FILE"
+        ssh $SSH_OPTS core@${VM_IP} sudo cp "UNMASK_SSHD_REMOTE_TMP_FILE" /etc/systemd/system/unmask-sshd.service && sudo systemctl daemon-reload && sudo systemctl enable unmask-sshd.service
+
         set +e
-        ssh -o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 core@${VM_IP} sudo bootc switch --apply "${REGISTRY}/${IMAGE}:latest"
+        ssh $SSH_OPTS core@${VM_IP} sudo bootc switch --apply "${REGISTRY}/${IMAGE}:latest"
         SSH_EXIT_CODE=$?
         set -e
         if [[ $SSH_EXIT_CODE -eq 255 ]]; then
@@ -212,6 +234,9 @@ runs:
           echo "Tests missing..."
           exit 1
         fi
+
+        echo "Waiting for SSH port to be open on ${VM_IP}..."
+        for i in {1..30}; do nc -z ${VM_IP} 22 && break || sleep 5; done
 
         mapfile -t TEST_LIST <<< "$TESTS"
         mkdir test-logs
