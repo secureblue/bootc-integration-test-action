@@ -191,19 +191,6 @@ runs:
         ssh-keyscan -H "${VM_IP}" >> ~/.ssh/known_hosts
         UNMASK_SSHD_FILE="./unmask-sshd.service"
 
-        tee "$UNMASK_SSHD_FILE" > /dev/null <<EOD
-        [Unit]
-        Description=Unmask and start sshd
-        After=network.target
-
-        [Service]
-        Type=oneshot
-        ExecStart=systemctl unmask sshd && systemctl enable --now sshd
-
-        [Install]
-        WantedBy=multi-user.target
-        EOD
-
         scp $SSH_OPTS "$UNMASK_SSHD_FILE" core@$VM_IP:/tmp/unmask-sshd.service
         ssh $SSH_OPTS core@${VM_IP} sudo cp /tmp/unmask-sshd.service /etc/systemd/system/unmask-sshd.service && sudo systemctl daemon-reload && sudo systemctl enable unmask-sshd.service
 
