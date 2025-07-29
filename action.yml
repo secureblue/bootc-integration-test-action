@@ -178,6 +178,7 @@ runs:
     - name: 'Rebase'
       shell: bash
       env:
+        STARTUP_WAIT_SECONDS: ${{ inputs.startup-wait-seconds }}
         VM_IP: ${{ inputs.vm-ip }}
         REGISTRY: ${{ inputs.registry }}
         IMAGE: ${{ inputs.image }}
