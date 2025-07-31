@@ -150,7 +150,7 @@ runs:
         REGISTRY: ${{ inputs.registry }}
         BRANCH: ${{ inputs.branch }}
       run: |
-        sudo podman pull ${REGISTRY}/${IMAGE}:${BRANCH}"
+        sudo podman pull "${REGISTRY}/${IMAGE}:${BRANCH}"
         mkdir output
         sudo podman run \
             --rm \
@@ -164,7 +164,7 @@ runs:
             --type qcow2 \
             --use-librepo=True \
             --rootfs brtfs \
-            ${REGISTRY}/${IMAGE}:${BRANCH}"
+            "${REGISTRY}/${IMAGE}:${BRANCH}"
 
         IGNITION_CONFIG="/var/lib/libvirt/boot/config.ign"
         IGNITION_DEVICE_ARG=(--qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=${IGNITION_CONFIG}")
