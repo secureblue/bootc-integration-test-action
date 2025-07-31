@@ -175,6 +175,7 @@ runs:
           --memory="${MEMORY_MB}" \
           --import \
           --graphics=none \
+          --os-variant="silverblue-unknown" \
           --disk="size=${DISK_SIZE_GB},backing_store=./output/qcow2/disk.qcow2" \
           --network network=default \
           "${IGNITION_DEVICE_ARG[@]}" \
