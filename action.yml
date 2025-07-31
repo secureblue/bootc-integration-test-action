@@ -107,14 +107,20 @@ runs:
         sudo mkdir -p "${IGNITION_DIR}"
         SSH_PUBLIC_KEY=$(cat ~/.ssh/id_ed25519.pub)
 
-        cat <<EOF > config.bu
-        variant: fcos
-        version: ${BUTANE_SPEC_VERSION}
-        passwd:
-          users:
-            - name: core
-              ssh_authorized_keys:
-                - "${SSH_PUBLIC_KEY}"
+        cat <<EOF > kickstart.cfg
+        #---- Install our SSH key ----
+        mkdir -m0700 /root/.ssh/
+
+        cat <<EOF >/root/.ssh/authorized_keys
+        ${SSH_PUBLIC_KEY}
+        EOF
+
+        ### set permissions
+        chmod 0600 /root/.ssh/authorized_keys
+
+        ### fix up selinux context
+        restorecon -R /root/.ssh/
+
         storage:
           files:
             - path: /etc/NetworkManager/system-connections/static.nmconnection
@@ -166,8 +172,11 @@ runs:
             --rootfs btrfs \
             "${REGISTRY}/${IMAGE}:${BRANCH}"
 
+  mv output/qcow2/disk.qcow2 /var/lib/libvirt/images/
+
         IGNITION_CONFIG="/var/lib/libvirt/boot/config.ign"
         IGNITION_DEVICE_ARG=(--qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=${IGNITION_CONFIG}")
+                
         sudo virt-install \
           --connect="qemu:///system" \
           --name="${VM_NAME}" \
@@ -176,7 +185,7 @@ runs:
           --import \
           --graphics=none \
           --os-variant="silverblue-unknown" \
-          --disk="size=${DISK_SIZE_GB},backing_store=./output/qcow2/disk.qcow2" \
+          --disk="size=${DISK_SIZE_GB},backing_store=${WORKSPACE}/output/qcow2/disk.qcow2" \
           --network network=default \
           "${IGNITION_DEVICE_ARG[@]}" \
           --noautoconsole
