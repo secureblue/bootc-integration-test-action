@@ -58,18 +58,11 @@ runs:
     - name: Maximize build space
       uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
 
-    - name: Checkout repository
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      with:
-        persist-credentials: false
-        repository: secureblue/bootc-integration-test-action
-        path: bootc-integration-test-action
-    
     - name: 'Install Dependencies'
       shell: bash
       run: |
         sudo apt-get update
-        sudo apt-get install -y qemu-system-x86 libvirt-daemon-system libvirt-clients virtinst podman apparmor-utils wget
+        sudo apt-get install -y qemu-system-x86 libvirt-daemon-system libvirt-clients virtinst podman apparmor-utils wget libguestfs-tools
 
     - name: 'Configure Libvirt and AppArmor'
       shell: bash
@@ -79,70 +72,18 @@ runs:
         sudo systemctl restart libvirtd
         sudo usermod -aG kvm,libvirt "$USER"
 
-    - name: 'Install Butane'
-      shell: bash
-      env:
-        BUTANE_VERSION: ${{ inputs.butane-version }}
-      run: |
-        URL="https://github.com/coreos/butane/releases/download/${BUTANE_VERSION}/butane-x86_64-unknown-linux-gnu"
-        wget -q "${URL}" -O /tmp/butane
-        chmod +x /tmp/butane
-        sudo mv /tmp/butane /usr/local/bin/butane
-
     - name: Generate SSH Keypair
       shell: bash
       run: |
         mkdir -p ~/.ssh
         ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
 
-    - name: 'Create Ignition Config'
-      shell: bash
-      env:
-        VM_INTERFACE: ${{ inputs.vm-interface }}
-        VM_IP: ${{ inputs.vm-ip }}
-        BUTANE_SPEC_VERSION: ${{ inputs.butane-spec-version }}
-      run: |
-        IGNITION_DIR="/var/lib/libvirt/boot"
-        IGNITION_FILE="${IGNITION_DIR}/config.ign"
-        sudo mkdir -p "${IGNITION_DIR}"
-        SSH_PUBLIC_KEY=$(cat ~/.ssh/id_ed25519.pub)
-
-        cat <<EOF > config.bu
-        variant: fcos
-        version: ${BUTANE_SPEC_VERSION}
-        passwd:
-          users:
-            - name: core
-              ssh_authorized_keys:
-                - "${SSH_PUBLIC_KEY}"
-        storage:
-          files:
-            - path: /etc/NetworkManager/system-connections/static.nmconnection
-              mode: 0600
-              contents:
-                inline: |
-                  [connection]
-                  id=static-${VM_INTERFACE}
-                  type=ethernet
-                  interface-name=${VM_INTERFACE}
-                  [ipv4]
-                  method=manual
-                  addresses=${VM_IP}/24
-                  gateway=192.168.122.1
-                  dns=1.1.1.1
-                  [ipv6]
-                  method=disabled
-        EOF
-
-        sudo butane --pretty --strict config.bu | sudo tee "${IGNITION_FILE}" > /dev/null
-        sudo chown libvirt-qemu:kvm "${IGNITION_FILE}"
-        sudo chmod 644 "${IGNITION_FILE}"
-
     - name: 'Create and Start VM'
       shell: bash
       env:
         DISK_SIZE_GB: ${{ inputs.disk-size-gb }}
         IMAGE_PATH: ${{ steps.download_image.outputs.image_path }}
+        VM_INTERFACE: ${{ inputs.vm-interface }}
         VM_NAME: ${{ inputs.vm-name }}
         VCPU: ${{ inputs.vcpus }}
         MEMORY_MB: ${{ inputs.memory-mb }}
@@ -166,8 +107,33 @@ runs:
             --rootfs btrfs \
             "${REGISTRY}/${IMAGE}:${BRANCH}"
 
-        IGNITION_CONFIG="/var/lib/libvirt/boot/config.ign"
-        IGNITION_DEVICE_ARG=(--qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=${IGNITION_CONFIG}")
+        mv output/qcow2/disk.qcow2 /var/lib/libvirt/images/
+        DISK_IMAGE_PATH="/var/lib/libvirt/images/disk.qcow2"
+        PUBKEY_PATH="$HOME/.ssh/id_ed25519.pub"
+        sudo virt-customize -a "$DISK_IMAGE_PATH" \
+          --run-command 'useradd -m -G wheel -s /bin/bash core' \
+          --mkdir -p /home/core/.ssh \
+          --upload "$PUBKEY_PATH":/tmp/id_ed25519.pub \
+          --run-command 'cat /tmp/id_ed25519.pub > /home/core/.ssh/authorized_keys' \
+          --run-command 'chmod 700 /home/core/.ssh && chmod 600 /home/core/.ssh/authorized_keys' \
+          --run-command 'chown -R core:core /home/core/.ssh' \
+          --run-command "mkdir -p /etc/NetworkManager/system-connections" \
+          --run-command "cat > /etc/NetworkManager/system-connections/static-${VM_INTERFACE}.nmconnection <<EOF
+        [connection]
+        id=static-${VM_INTERFACE}
+        type=ethernet
+        interface-name=${VM_INTERFACE}
+        [ipv4]
+        method=manual
+        addresses=${VM_IP}/24
+        gateway=192.168.122.1
+        dns=1.1.1.1
+        [ipv6]
+        method=disabled
+        EOF
+        " \
+          --run-command "chmod 600 /etc/NetworkManager/system-connections/static-${VM_INTERFACE}.nmconnection"
+
         sudo virt-install \
           --connect="qemu:///system" \
           --name="${VM_NAME}" \
@@ -176,9 +142,8 @@ runs:
           --import \
           --graphics=none \
           --os-variant="silverblue-unknown" \
-          --disk="size=${DISK_SIZE_GB},backing_store=./output/qcow2/disk.qcow2" \
+          --disk="size=${DISK_SIZE_GB},backing_store=${DISK_IMAGE_PATH}" \
           --network network=default \
-          "${IGNITION_DEVICE_ARG[@]}" \
           --noautoconsole
 
     - name: 'Wait for VM Startup'
