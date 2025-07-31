@@ -35,6 +35,7 @@ jobs:
 | `registry`             | Registry for the image. Example: ghcr.io/secureblue                            | string | Yes      | N/A             |
 | `image`                | Image name for the VM. Example: silverblue-main-hardened                       | string | Yes      | N/A             |
 | `tests`                | List of test scripts to execute on the VM via SSH after it boots.              | string | Yes      | N/A             |
+| `branch`               | Image branch.                                                                  | string | No       | `latest`        |
 | `runner`               | Runner for the job. Examples: `ubuntu-latest`, `ubuntu-24.04`.                 | string | No       | `ubuntu-24.04`  |
 | `vm-name`              | Name for the virtual machine and its disk in libvirt.                          | string | No       | `vm-coreos`     |
 | `vcpus`                | Number of virtual CPUs for the VM.                                             | number | No       | `3`             |
