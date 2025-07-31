@@ -172,7 +172,7 @@ runs:
             --rootfs btrfs \
             "${REGISTRY}/${IMAGE}:${BRANCH}"
 
-  mv output/qcow2/disk.qcow2 /var/lib/libvirt/images/
+        mv output/qcow2/disk.qcow2 /var/lib/libvirt/images/
 
         IGNITION_CONFIG="/var/lib/libvirt/boot/config.ign"
         IGNITION_DEVICE_ARG=(--qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=${IGNITION_CONFIG}")
