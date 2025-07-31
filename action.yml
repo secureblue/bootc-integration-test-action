@@ -163,7 +163,7 @@ runs:
             quay.io/centos-bootc/bootc-image-builder:latest \
             --type qcow2 \
             --use-librepo=True \
-            --rootfs brtfs \
+            --rootfs btrfs \
             "${REGISTRY}/${IMAGE}:${BRANCH}"
 
         IGNITION_CONFIG="/var/lib/libvirt/boot/config.ign"
