@@ -138,16 +138,6 @@ runs:
         sudo chown libvirt-qemu:kvm "${IGNITION_FILE}"
         sudo chmod 644 "${IGNITION_FILE}"
 
-    - name: 'Download FCOS Image'
-      id: download_image
-      shell: bash
-      run: |
-        DOWNLOAD_DIR="/tmp"
-        IMAGE_FILENAME=$(basename "$(sudo podman run --pull=always --rm -v "${DOWNLOAD_DIR}:/data" -w /data \
-          quay.io/coreos/coreos-installer:release download -s testing -p qemu -f qcow2.xz --decompress)")
-        TEMP_IMAGE_PATH="${DOWNLOAD_DIR}/${IMAGE_FILENAME}"
-        echo "image_path=${TEMP_IMAGE_PATH}" >> $GITHUB_OUTPUT
-
     - name: 'Create and Start VM'
       shell: bash
       env:
@@ -157,6 +147,22 @@ runs:
         VCPU: ${{ inputs.vcpus }}
         MEMORY_MB: ${{ inputs.memory-mb }}
       run: |
+        sudo podman pull ${REGISTRY}/${IMAGE}:${BRANCH}"
+        mkdir output
+        sudo podman run \
+            --rm \
+            -it \
+            --privileged \
+            --pull=newer \
+            --security-opt label=type:unconfined_t \
+            -v ./output:/output \
+            -v /var/lib/containers/storage:/var/lib/containers/storage \
+            quay.io/centos-bootc/bootc-image-builder:latest \
+            --type qcow2 \
+            --use-librepo=True \
+            --rootfs brtfs \
+            ${REGISTRY}/${IMAGE}:${BRANCH}"
+
         IGNITION_CONFIG="/var/lib/libvirt/boot/config.ign"
         IGNITION_DEVICE_ARG=(--qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=${IGNITION_CONFIG}")
         sudo virt-install \
@@ -164,10 +170,9 @@ runs:
           --name="${VM_NAME}" \
           --vcpus="${VCPU}" \
           --memory="${MEMORY_MB}" \
-          --os-variant="fedora-coreos-testing" \
           --import \
           --graphics=none \
-          --disk="size=${DISK_SIZE_GB},backing_store=${IMAGE_PATH}" \
+          --disk="size=${DISK_SIZE_GB},backing_store=./output/qcow2/disk.qcow2" \
           --network network=default \
           "${IGNITION_DEVICE_ARG[@]}" \
           --noautoconsole
