@@ -146,6 +146,9 @@ runs:
         VM_NAME: ${{ inputs.vm-name }}
         VCPU: ${{ inputs.vcpus }}
         MEMORY_MB: ${{ inputs.memory-mb }}
+        IMAGE: ${{ inputs.image }}
+        REGISTRY: ${{ inputs.registry }}
+        BRANCH: ${{ inputs.branch }}
       run: |
         sudo podman pull ${REGISTRY}/${IMAGE}:${BRANCH}"
         mkdir output
@@ -185,36 +188,6 @@ runs:
       run: |
         echo "Waiting ${STARTUP_WAIT_SECONDS} seconds for the VM to start..."
         sleep "${STARTUP_WAIT_SECONDS}"
-    
-    - name: 'Rebase'
-      shell: bash
-      env:
-        STARTUP_WAIT_SECONDS: ${{ inputs.startup-wait-seconds }}
-        VM_IP: ${{ inputs.vm-ip }}
-        REGISTRY: ${{ inputs.registry }}
-        UNMASK_SSHD_FILE: "${{ github.workspace }}/bootc-integration-test-action/unmask-sshd.service"
-        IMAGE: ${{ inputs.image }}
-        BRANCH: ${{ inputs.branch }}
-      run: |
-        echo "Waiting for SSH port to be open on ${VM_IP}..."
-        for i in {1..30}; do nc -z ${VM_IP} 22 && break || sleep 5; done
-
-        SSH_OPTS="-o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519"
-
-        ssh-keyscan -H "${VM_IP}" >> ~/.ssh/known_hosts
-
-        set +e
-        ssh $SSH_OPTS core@${VM_IP} "sudo bootc switch --apply ${REGISTRY}/${IMAGE}:${BRANCH}"
-        SSH_EXIT_CODE=$?
-        set -e
-        if [[ $SSH_EXIT_CODE -eq 255 ]]; then
-          echo "SSH connection closed due to bootc apply."
-          echo "Waiting ${STARTUP_WAIT_SECONDS} seconds for the VM to restart..."
-          sleep "${STARTUP_WAIT_SECONDS}"
-          exit 0
-        else
-          exit $SSH_EXIT_CODE
-        fi
 
     - name: 'Run Tests'
       shell: bash
