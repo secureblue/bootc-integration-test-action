@@ -112,7 +112,7 @@ runs:
         PUBKEY_PATH="$HOME/.ssh/id_ed25519.pub"
         sudo virt-customize -a "$DISK_IMAGE_PATH" \
           --run-command 'useradd -m -G wheel -s /bin/bash core' \
-          --mkdir -p /home/core/.ssh \
+          --mkdir /home/core/.ssh \
           --upload "$PUBKEY_PATH":/tmp/id_ed25519.pub \
           --run-command 'cat /tmp/id_ed25519.pub > /home/core/.ssh/authorized_keys' \
           --run-command 'chmod 700 /home/core/.ssh && chmod 600 /home/core/.ssh/authorized_keys' \
