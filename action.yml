@@ -107,7 +107,7 @@ runs:
             --rootfs btrfs \
             "${REGISTRY}/${IMAGE}:${BRANCH}"
 
-        mv output/qcow2/disk.qcow2 /var/lib/libvirt/images/
+        sudo mv output/qcow2/disk.qcow2 /var/lib/libvirt/images/
         DISK_IMAGE_PATH="/var/lib/libvirt/images/disk.qcow2"
         PUBKEY_PATH="$HOME/.ssh/id_ed25519.pub"
         sudo virt-customize -a "$DISK_IMAGE_PATH" \
