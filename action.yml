@@ -109,7 +109,7 @@ runs:
         echo "$INTEG_TEST_ACTION_PATH"
         cp ~/.ssh/id_ed25519.pub "${INTEG_TEST_ACTION_PATH}/files/system/etc/"
         RECIPE_PATH="${INTEG_TEST_ACTION_PATH}/recipe.yml"
-        cp -r "$INTEG_TEST_ACTION_PATH"/. /tmp
+        cp -r "$INTEG_TEST_ACTION_PATH"/. "$CURRENT_PATH"
 
         sed -i "s|%%IMAGE%%|${IMAGE}|g" "${RECIPE_PATH}"
         sed -i "s|%%REGISTRY%%|${REGISTRY}|g" "${RECIPE_PATH}"
