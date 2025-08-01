@@ -31,14 +31,6 @@ inputs:
     description: 'Size (in GB) of the virtual machine disk. Must be less than runner disk space.'
     default: 20
     required: false
-  butane-version:
-    description: 'Version of Butane tool to install.'
-    default: 'v0.24.0'
-    required: false
-  butane-spec-version:
-    description: 'Version of the Butane/Ignition spec to use in the config file.'
-    default: '1.6.0'
-    required: false
   vm-ip:
     description: 'Static IP address for the VM on the default 192.168.122.0/24 network.'
     default: '192.168.122.2'
@@ -51,11 +43,6 @@ inputs:
     description: 'Time in seconds to wait after VM startup. Recommended: 180 for complex setups.'
     default: 180
     required: false
-  registry_username:
-    description: |
-      The username used to sign into the container registry.
-    required: false
-    default: ${{ github.repository_owner }}
 
 runs:
   using: "composite"
