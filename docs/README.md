@@ -9,7 +9,7 @@ This action runs any integration tests against any bootable container image.
 3. [bootc-image-builder](https://github.com/osbuild/bootc-image-builder) is used to generate a qcow image with preconfigured ssh.
 4. The resulting qcow image is imported into [virt-install](https://linux.die.net/man/1/virt-install).
 5. Once the machine has booted, tests are executed on the VM and their output is recorded.
-6. As a cleanup step, the test image is removed from the registry. 
+6. As a cleanup step, the test image is removed from the registry.
 7. Test output logs are uploaded to Github Artifacts and the action passes if all tests exited with exit code 0.
 
 ## Usage
@@ -58,4 +58,3 @@ jobs:
 | `memory-mb`            | Amount of RAM in MB for the VM.                                                | number | No       | `8192`          |
 | `disk-size-gb`         | Size (in GB) of the virtual machine disk.                                      | number | No       | `20`            |
 | `startup-wait-seconds` | Time in seconds to wait after VM startup, before running post-install commands.| number | No       | `180`           |
-
