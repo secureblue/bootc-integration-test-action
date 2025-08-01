@@ -16,4 +16,4 @@ modules:
         destination: /
   - type: script
     scripts:
-    - enableserivces.sh
+    - enableservices.sh
