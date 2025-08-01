@@ -12,8 +12,8 @@ alt-tags:
 modules:
   - type: files
     files:
-      source: system  
-      destination: /
+      - source: system  
+        destination: /
   - type: script
     scripts:
     - enableserivces.sh
