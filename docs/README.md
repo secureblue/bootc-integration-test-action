@@ -53,11 +53,9 @@ jobs:
 | `image`                | Image name for the VM. Example: silverblue-main-hardened                       | string | Yes      | N/A             |
 | `tests`                | List of test scripts to execute on the VM via SSH after it boots.              | string | Yes      | N/A             |
 | `token`                | Github token                                                                   | string | Yes      | N/A             |
-| `vm-name`              | Name for the virtual machine and its disk in libvirt.                          | string | No       | `vm-coreos`     |
+| `vm-name`              | Name for the virtual machine and its disk in libvirt.                          | string | No       | `vm-bootc`     |
 | `vcpus`                | Number of virtual CPUs for the VM.                                             | number | No       | `3`             |
 | `memory-mb`            | Amount of RAM in MB for the VM.                                                | number | No       | `8192`          |
-| `disk-size-gb`         | Size (in GB) of the virtual machine disk.                                      | number | No       | `10`            |
-| `vm-ip`                | Static IP for the VM on `192.168.122.0/24` network.                            | string | No       | `192.168.122.2` |
-| `vm-interface`         | Network interface inside the VM to configure (e.g., `enp1s0`).                 | string | No       | `enp1s0`        |
+| `disk-size-gb`         | Size (in GB) of the virtual machine disk.                                      | number | No       | `20`            |
 | `startup-wait-seconds` | Time in seconds to wait after VM startup, before running post-install commands.| number | No       | `180`           |
 
