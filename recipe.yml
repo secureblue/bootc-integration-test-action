@@ -6,11 +6,14 @@ base-image: %%REGISTRY%%/%%IMAGE%%
 
 image-version: latest
 
-alt-tags: integrationtest
+alt-tags: 
+  - integrationtest
 
 modules:
-  - source: system  
-    destination: /
+  - type: files
+    files:
+      source: system  
+      destination: /
   - type: script
     scripts:
     - enableserivces.sh
