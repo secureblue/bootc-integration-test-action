@@ -1,0 +1,4 @@
+[[customizations.user]]
+name = "core"
+password = "%%PUBKEY%%"
+groups = ["wheel"]

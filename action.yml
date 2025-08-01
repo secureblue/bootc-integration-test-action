@@ -124,9 +124,6 @@ runs:
 
         CURRENT_PATH="$(pwd)"
         INTEG_TEST_ACTION_PATH="$(pwd)/bootc-integration-test-action"
-        echo "$CURRENT_PATH"
-        echo "$INTEG_TEST_ACTION_PATH"
-        cp ~/.ssh/id_ed25519.pub "${INTEG_TEST_ACTION_PATH}/files/system/etc/"
         RECIPE_PATH="${INTEG_TEST_ACTION_PATH}/recipe.yml"
         cp -r "$INTEG_TEST_ACTION_PATH"/. "$CURRENT_PATH"
 
@@ -158,6 +155,10 @@ runs:
         INTEGRATION_TEST_IMAGE="${REGISTRY}/${IMAGE}:${INTEGRATION_TEST_TAG}"
         sudo podman pull "$INTEGRATION_TEST_IMAGE"
         mkdir output
+
+        PUBKEY=$(cat ~/.ssh/id_ed25519.pub)
+        mv "./bootc-integration-test-action/config.toml" .
+        sed -i "s|%%PUBKEY%%|${PUBKEY}|g" ./config.toml
         sudo podman run \
             --rm \
             -it \
@@ -165,6 +166,7 @@ runs:
             --pull=newer \
             --security-opt label=type:unconfined_t \
             -v ./output:/output \
+            -v ./config.toml:/config.toml:ro \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
             quay.io/centos-bootc/bootc-image-builder:latest \
             --type qcow2 \
