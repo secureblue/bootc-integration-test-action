@@ -2,30 +2,48 @@
 
 This repository provides a generic GitHub Action for creating KVM virtual machines and running integration tests against them.
 
-## Security Considerations
+## How it works
 
-Workflows use KVM and `libvirt`, the standard Linux virtualization stack. The runner's user is added to groups enabling him or her to interact with the virtualization stack. By default, Ubuntu images include AppArmor, which is specially configured to run in Github-hosted runnners, requiring the adaptation of specific rules to authorize the addition of the ignition file for CoreOS deployments.
+1. The image to be tested and the tests to be run are passed in via the action inputs.
+2. Blue-Build is used to add a thin layer onto the image to ensure ssh, networking, and container policies are configured to allow testing to function. This test image is pushed to the registry using an `integrationtest-UUID` tag.
+3. bootc-image-builder is used to generate a qcow image with a default test user
+4. The resulting qcow image is imported into virt-install.
+5. Once the machine has booted, tests are executed on the VM and their output is recorded.
+6. As a cleanup step, the test image is removed from the registry. 
+7. Test output logs are uploaded to Github Artifacts and the action passes if all tests exited with exit code 0.
 
 ## Usage
 
 ```yaml
 # .github/workflows/integration-tests.yml
-name: secureblue VM integration tests
-
-on: [push]
-
+name: integration-tests
+permissions: {}
+on:
+  schedule:
+    - cron: "00 7 * * *" # run at 7:00 UTC every day 
 jobs:
-  launch-and-configure:
-    name: 'Launch and Configure secureblue VM integration tests'
-    uses: secureblue/bootc-virtual-machine-action@main
-    with:
-      registry: ghcr.io/secureblue
-      image: silverblue-main-hardened
-      vcpus: 3
-      memory-mb: 8192
-      tests: |
-        ./tests/verify-state.sh
-        ./tests/validate-config.sh
+  integration-tests:
+    name: Run integration tests
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    strategy:
+      fail-fast: false 
+    steps
+      - name: Run integration tests
+        uses: secureblue/bootc-virtual-machine-action@main
+        with:          
+          registry: ghcr.io/secureblue
+          image: silverblue-main-hardened
+          branch: latest
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tests: |
+            ./.github/workflows/integration_tests/test1.sh
+            ./.github/workflows/integration_tests/test2.sh
+            ./.github/workflows/integration_tests/test3.sh
+            ./.github/workflows/integration_tests/test4.sh
 ```
 
 ### Inputs
@@ -35,6 +53,7 @@ jobs:
 | `registry`             | Registry for the image. Example: ghcr.io/secureblue                            | string | Yes      | N/A             |
 | `image`                | Image name for the VM. Example: silverblue-main-hardened                       | string | Yes      | N/A             |
 | `tests`                | List of test scripts to execute on the VM via SSH after it boots.              | string | Yes      | N/A             |
+| `token`                | Github token                                                                   | string | Yes      | N/A             |
 | `branch`               | Image branch.                                                                  | string | No       | `latest`        |
 | `runner`               | Runner for the job. Examples: `ubuntu-latest`, `ubuntu-24.04`.                 | string | No       | `ubuntu-24.04`  |
 | `vm-name`              | Name for the virtual machine and its disk in libvirt.                          | string | No       | `vm-coreos`     |
