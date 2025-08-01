@@ -7,7 +7,7 @@ base-image: %%REGISTRY%%/%%IMAGE%%
 image-version: latest
 
 alt-tags: 
-  - integrationtest
+  - integrationtest-%%TESTUUID%%
 
 modules:
   - type: files
@@ -17,3 +17,4 @@ modules:
   - type: script
     scripts:
     - enableservices.sh
+    - setpermissivecontainerpolicy.sh

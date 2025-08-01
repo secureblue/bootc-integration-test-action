@@ -1,0 +1,1 @@
+sed -i 's/\breject\b/insecureAcceptAnything/g' /etc/containers/policy.json
