@@ -50,10 +50,8 @@ inputs:
   registry_token:
     description: |
       The token used to sign into the container registry.
-
-      Example: `&#36;{{ github.token }}`
     required: false
-    default: ""
+    default: "${{ github.token }}"
   registry_username:
     description: |
       The username used to sign into the container registry.
