@@ -130,7 +130,7 @@ runs:
         IMAGE: ${{ inputs.image }}
         REGISTRY: ${{ inputs.registry }}
       run: |
-        sudo podman pull "${REGISTRY}/${IMAGE}:integrationtest
+        sudo podman pull "${REGISTRY}/${IMAGE}:integrationtest"
         mkdir output
         sudo podman run \
             --rm \
