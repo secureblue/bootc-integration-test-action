@@ -1,0 +1,20 @@
+#cloud-config
+write_files:
+  - path: /etc/NetworkManager/system-connections/static.nmconnection
+    permissions: '0600'
+    content: |
+      [connection]
+      id=static-${VM_INTERFACE}
+      type=ethernet
+      interface-name=${VM_INTERFACE}
+      [ipv4]
+      method=manual
+      addresses=${VM_IP}/24
+      gateway=192.168.122.1
+      dns=1.1.1.1
+      [ipv6]
+      method=disabled
+
+runcmd:
+  - systemctl enable sshd
+  - systemctl start sshd
