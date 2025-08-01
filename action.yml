@@ -47,6 +47,18 @@ inputs:
     description: 'Time in seconds to wait after VM startup. Recommended: 180 for complex setups.'
     default: 180
     required: false
+  registry_token:
+    description: |
+      The token used to sign into the container registry.
+
+      Example: `&#36;{{ github.token }}`
+    required: false
+    default: ""
+  registry_username:
+    description: |
+      The username used to sign into the container registry.
+    required: false
+    default: ${{ github.repository_owner }}
 
 runs:
   using: "composite"
@@ -60,6 +72,11 @@ runs:
         persist-credentials: false
         repository: secureblue/bootc-integration-test-action
         path: bootc-integration-test-action
+
+    - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
+      with:
+        install-dir: /usr/bin
+        use-sudo: true
 
     - name: 'Install Dependencies'
       shell: bash
@@ -102,7 +119,13 @@ runs:
         GH_PR_EVENT_NUMBER: ${{ github.event.number }}
         IMAGE: ${{ inputs.image }}
         REGISTRY: ${{ inputs.registry }}
+        GH_TOKEN: ${{ inputs.registry_token }}
+        BB_PASSWORD: ${{ inputs.registry_token }}
       run: |
+        IFS='/' read -r BB_REGISTRY BB_REGISTRY_NAMESPACE <<< "$REGISTRY"
+        cosign generate-key-pair 
+        COSIGN_PRIVATE_KEY=$(< cosign.key)
+
         CURRENT_PATH="$(pwd)"
         INTEG_TEST_ACTION_PATH="$(pwd)/bootc-integration-test-action"
         echo "$CURRENT_PATH"
