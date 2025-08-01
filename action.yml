@@ -62,7 +62,7 @@ runs:
       shell: bash
       run: |
         sudo apt-get update
-        sudo apt-get install -y qemu-system-x86 libvirt-daemon-system libvirt-clients virtinst podman apparmor-utils wget libguestfs-tools
+        sudo apt-get install -y passt qemu-system-x86 libvirt-daemon-system libvirt-clients virtinst podman apparmor-utils wget libguestfs-tools
 
     - name: 'Configure Libvirt and AppArmor'
       shell: bash
