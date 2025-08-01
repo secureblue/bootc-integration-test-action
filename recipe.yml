@@ -1,0 +1,16 @@
+name: %%IMAGE%%-integrationtest
+
+description: "Integration testing"
+
+base-image: %%REGISTRY%%/%%IMAGE%%
+
+image-version: latest
+
+alt-tags: integrationtest
+
+modules:
+  - source: system  
+    destination: /
+  - type: script
+    scripts:
+    - enableserivces.sh
