@@ -114,7 +114,7 @@ runs:
         export LIBGUESTFS_NETWORK=0
         export LIBGUESTFS_DEBUG=1
         export LIBGUESTFS_TRACE=1
-        sudo virt-customize -a "$DISK_IMAGE_PATH" \
+        sudo virt-customize -x -v -a "$DISK_IMAGE_PATH" \
           --run-command 'useradd -m -G wheel -s /bin/bash core' \
           --mkdir /home/core/.ssh \
           --upload "$PUBKEY_PATH":/tmp/id_ed25519.pub \
