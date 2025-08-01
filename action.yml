@@ -11,10 +11,6 @@ inputs:
   tests:
     description: 'List of test scripts to execute on the VM via SSH after it boots. Exit code determines test status.'
     required: true
-  branch:
-    description: 'Image branch'
-    default: 'latest'
-    required: false
   vm-name:
     description: 'Name for the virtual machine and its disk in libvirt.'
     default: 'vm-bootc'
@@ -71,6 +67,18 @@ runs:
         sudo apt-get update
         sudo apt-get install -y passt qemu-system-x86 libvirt-daemon-system libvirt-clients virtinst podman apparmor-utils wget libguestfs-tools
 
+      - name: Install BlueBuild
+        shell: bash
+        env:
+          CLI_VERSION_TAG: ${{ steps.build_vars.outputs.cli_version }}
+        run: |
+          docker create \
+            --name blue-build-installer \
+            ghcr.io/blue-build/cli:v0.9.20-installer
+          docker cp blue-build-installer:/out/bluebuild /usr/local/bin/bluebuild
+          docker rm blue-build-installer
+          bluebuild --version
+
     - name: 'Configure Libvirt and AppArmor'
       shell: bash
       run: |
@@ -85,6 +93,31 @@ runs:
         mkdir -p ~/.ssh
         ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
 
+    - name: Build integration test image
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+      env:
+        RUST_LOG_STYLE: always
+        CLICOLOR_FORCE: '1'
+        GH_PR_EVENT_NUMBER: ${{ github.event.number }}
+        IMAGE: ${{ inputs.image }}
+        REGISTRY: ${{ inputs.registry }}
+      run: |
+        CURRENT_PATH="$(pwd)"
+        INTEG_TEST_ACTION_PATH="$(pwd)/bootc-integration-test-action"
+        echo "$CURRENT_PATH"
+        echo "$INTEG_TEST_ACTION_PATH"
+        cp ~/.ssh/id_ed25519.pub "${INTEG_TEST_ACTION_PATH}/files/system/etc/"
+        RECIPE_PATH="${INTEG_TEST_ACTION_PATH}/recipe.yml"
+        cp -r "$INTEG_TEST_ACTION_PATH"/. "$CURRENT_PATH"
+
+        sed -i "s|%%IMAGE%%|${IMAGE}|g" "${RECIPE_PATH}"
+        sed -i "s|%%REGISTRY%%|${REGISTRY}|g" "${RECIPE_PATH}"
+
+
+        BUILD_OPTS="--build-driver podman --squash"
+        bluebuild build -v ${BUILD_OPTS} ${RECIPE_PATH}
+
     - name: 'Create and Start VM'
       shell: bash
       env:
@@ -96,19 +129,9 @@ runs:
         MEMORY_MB: ${{ inputs.memory-mb }}
         IMAGE: ${{ inputs.image }}
         REGISTRY: ${{ inputs.registry }}
-        BRANCH: ${{ inputs.branch }}
       run: |
-        sudo podman pull "${REGISTRY}/${IMAGE}:${BRANCH}"
+        sudo podman pull "${REGISTRY}/${IMAGE}:integrationtest
         mkdir output
-        
-        PUBKEY=$(echo ~/.ssh/id_ed25519.pub)
-        cat > config.toml <<EOF
-        [[customizations.user]]
-        name = "core"
-        key = "${PUBKEY}"
-        groups = ["wheel"]
-        EOF
-
         sudo podman run \
             --rm \
             -it \
@@ -122,7 +145,7 @@ runs:
             --type qcow2 \
             --use-librepo=True \
             --rootfs btrfs \
-            "${REGISTRY}/${IMAGE}:${BRANCH}"
+            "${REGISTRY}/${IMAGE}:integrationtest
 
         sudo mv output/qcow2/disk.qcow2 /var/lib/libvirt/images/
         DISK_IMAGE_PATH="/var/lib/libvirt/images/disk.qcow2"

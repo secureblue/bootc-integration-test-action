@@ -1,0 +1,12 @@
+[Unit]
+Description=Install key for core user
+After=systemd-sysusers.service
+Wants=systemd-sysusers.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/install-key
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
