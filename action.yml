@@ -115,7 +115,7 @@ runs:
         sed -i "s|%%REGISTRY%%|${REGISTRY}|g" "${RECIPE_PATH}"
 
 
-        BUILD_OPTS="--build-driver podman --squash"
+        BUILD_OPTS="--build-driver podman --push --squash"
         bluebuild build -v ${BUILD_OPTS} ${RECIPE_PATH}
 
     - name: 'Create and Start VM'
