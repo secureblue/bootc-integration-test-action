@@ -67,17 +67,17 @@ runs:
         sudo apt-get update
         sudo apt-get install -y passt qemu-system-x86 libvirt-daemon-system libvirt-clients virtinst podman apparmor-utils wget libguestfs-tools
 
-      - name: Install BlueBuild
-        shell: bash
-        env:
-          CLI_VERSION_TAG: ${{ steps.build_vars.outputs.cli_version }}
-        run: |
-          docker create \
-            --name blue-build-installer \
-            ghcr.io/blue-build/cli:v0.9.20-installer
-          docker cp blue-build-installer:/out/bluebuild /usr/local/bin/bluebuild
-          docker rm blue-build-installer
-          bluebuild --version
+    - name: Install BlueBuild
+      shell: bash
+      env:
+        CLI_VERSION_TAG: ${{ steps.build_vars.outputs.cli_version }}
+      run: |
+        docker create \
+          --name blue-build-installer \
+          ghcr.io/blue-build/cli:v0.9.20-installer
+        docker cp blue-build-installer:/out/bluebuild /usr/local/bin/bluebuild
+        docker rm blue-build-installer
+        bluebuild --version
 
     - name: 'Configure Libvirt and AppArmor'
       shell: bash
