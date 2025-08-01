@@ -4,12 +4,12 @@ write_files:
     permissions: '0600'
     content: |
       [connection]
-      id=static-${VM_INTERFACE}
+      id=static-enp1s0
       type=ethernet
-      interface-name=${VM_INTERFACE}
+      interface-name=enp1s0
       [ipv4]
       method=manual
-      addresses=${VM_IP}/24
+      addresses=192.168.122.2/24
       gateway=192.168.122.1
       dns=1.1.1.1
       [ipv6]
