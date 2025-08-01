@@ -33,7 +33,7 @@ jobs:
       fail-fast: false 
     steps
       - name: Run integration tests
-        uses: secureblue/bootc-virtual-machine-action@main
+        uses: secureblue/bootc-virtual-machine-action@6638202e094c8f30b06917ccdd3187a1e376cdb9 # 0.0.1
         with:          
           registry: ghcr.io/secureblue
           image: silverblue-main-hardened
