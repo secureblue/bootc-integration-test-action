@@ -37,7 +37,6 @@ jobs:
         with:          
           registry: ghcr.io/secureblue
           image: silverblue-main-hardened
-          branch: latest
           token: ${{ secrets.GITHUB_TOKEN }}
           tests: |
             ./.github/workflows/integration_tests/test1.sh
