@@ -166,11 +166,10 @@ runs:
             --type qcow2 \
             --use-librepo=True \
             --rootfs btrfs \
-            "${REGISTRY}/${IMAGE}:integrationtest
+            "${REGISTRY}/${IMAGE}:integrationtest"
 
         sudo mv output/qcow2/disk.qcow2 /var/lib/libvirt/images/
         DISK_IMAGE_PATH="/var/lib/libvirt/images/disk.qcow2"
-        CLOUD_CONFIG_PATH="$(pwd)/bootc-integration-test-action/cloud-config.yml"
         
         sudo virt-install \
           --connect="qemu:///system" \
@@ -178,7 +177,6 @@ runs:
           --vcpus="${VCPU}" \
           --memory="${MEMORY_MB}" \
           --import \
-          --cloud-init user-data=${CLOUD_CONFIG_PATH} \
           --graphics=none \
           --os-variant="silverblue-unknown" \
           --disk="size=${DISK_SIZE_GB},backing_store=${DISK_IMAGE_PATH}" \
