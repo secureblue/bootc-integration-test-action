@@ -1,5 +1,5 @@
-name: 'Run bootc image VM with Ignition'
-description: 'A generic workflow to launch a bootc image VM configured with Butane/Ignition and optional post-install steps.'
+name: 'bootc-integration-test-action'
+description: 'This action runs integration tests against any bootable container image.'
 
 inputs:
   registry:
