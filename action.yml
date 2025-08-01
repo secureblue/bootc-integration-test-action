@@ -222,7 +222,7 @@ runs:
       with:
         token: ${{ inputs.token }}
         packages: ${{ inputs.image }}
-        delete-tags: ${{ steps.build_test_image.outputs.integration_test_tag }}
+        delete-tags: ${{ format('*{0}*', steps.build_test_image.outputs.integration_test_tag) }}
 
     - name: Upload Test Logs
       if: always()
