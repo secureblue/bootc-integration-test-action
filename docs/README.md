@@ -6,7 +6,7 @@ This action runs any integration tests against any bootable container image.
 
 1. The image to be tested and the tests to be run are passed in via the action inputs.
 2. [BlueBuild](https://blue-build.org/) is used to add a thin layer onto the image to ensure ssh, networking, and container policies are configured to allow testing to function. This test image is pushed to the registry using an `integrationtest-UUID` tag.
-3. [bootc-image-builder](https://github.com/osbuild/bootc-image-builder) is used to generate a qcow image with a default test user
+3. [bootc-image-builder](https://github.com/osbuild/bootc-image-builder) is used to generate a qcow image with preconfigured ssh.
 4. The resulting qcow image is imported into [virt-install](https://linux.die.net/man/1/virt-install).
 5. Once the machine has booted, tests are executed on the VM and their output is recorded.
 6. As a cleanup step, the test image is removed from the registry. 
