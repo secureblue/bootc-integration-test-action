@@ -1,4 +1,4 @@
-name: %%IMAGE%%-integrationtest
+name: %%IMAGE%%
 
 description: "Integration testing"
 
