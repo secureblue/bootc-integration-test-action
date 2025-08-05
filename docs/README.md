@@ -1,6 +1,6 @@
 # bootc-integration-test-action
 
-This action runs any integration tests against any bootable container image.
+This action runs integration tests against any bootable container image.
 
 ## How it works
 
