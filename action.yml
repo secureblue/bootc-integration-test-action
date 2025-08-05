@@ -222,8 +222,8 @@ runs:
           scp $SSH_OPTS "$TEST_FILE" core@$VM_IP:"$REMOTE_PATH"
           set +e
           ssh $SSH_OPTS core@$VM_IP "chmod +x $REMOTE_PATH && $REMOTE_PATH" > "$LOG_FILE" 2>&1
-          set -e
           TEST_EXIT_CODE=$?
+          set -e
           if [[ $TEST_EXIT_CODE -ne 0 ]]; then
             echo "Test $TEST_FILE failed"
             (( FAILED_TESTS++ ))
