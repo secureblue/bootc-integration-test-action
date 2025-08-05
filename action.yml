@@ -211,14 +211,18 @@ runs:
         SSH_OPTS="-o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519"
 
         for TEST_FILE in "${TEST_LIST[@]}"; do
-          [[ -z "$TEST_FILE" ]] && continue
+          if [ -z "$TEST_FILE" ]; then
+            continue
+          fi
           echo "Running test: $TEST_FILE"
           BASENAME=$(basename "$TEST_FILE")
           REMOTE_PATH="/home/core/${BASENAME}"
           LOG_FILE="test-logs/${BASENAME}.log"
 
           scp $SSH_OPTS "$TEST_FILE" core@$VM_IP:"$REMOTE_PATH"
+          set +e
           ssh $SSH_OPTS core@$VM_IP "chmod +x $REMOTE_PATH && $REMOTE_PATH" > "$LOG_FILE" 2>&1
+          set -e
           TEST_EXIT_CODE=$?
           if [[ $TEST_EXIT_CODE -ne 0 ]]; then
             echo "Test $TEST_FILE failed"
