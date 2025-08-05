@@ -110,7 +110,7 @@ runs:
         BB_PASSWORD: ${{ inputs.token }}
       run: |
         IFS='/' read -r BB_REGISTRY BB_REGISTRY_NAMESPACE <<< "$REGISTRY"
-        cosign generate-key-pair 
+        cosign generate-key-pair
         COSIGN_PRIVATE_KEY=$(< cosign.key)
 
         CURRENT_PATH="$(pwd)"
@@ -162,11 +162,12 @@ runs:
             --type qcow2 \
             --use-librepo=True \
             --rootfs btrfs \
+            --progress verbose \
             "$INTEGRATION_TEST_IMAGE"
 
         sudo mv output/qcow2/disk.qcow2 /var/lib/libvirt/images/
         DISK_IMAGE_PATH="/var/lib/libvirt/images/disk.qcow2"
-        
+
         sudo virt-install \
           --connect="qemu:///system" \
           --name="${VM_NAME}" \
@@ -210,7 +211,7 @@ runs:
         SSH_OPTS="-o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519"
 
         for TEST_FILE in "${TEST_LIST[@]}"; do
-          [[ -z "$TEST_FILE" ]] && continue 
+          [[ -z "$TEST_FILE" ]] && continue
           echo "Running test: $TEST_FILE"
           BASENAME=$(basename "$TEST_FILE")
           REMOTE_PATH="/home/core/${BASENAME}"
