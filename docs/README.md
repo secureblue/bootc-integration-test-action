@@ -1,6 +1,6 @@
 # bootc-integration-test-action
 
-This action runs any integration tests against any bootable container image.
+This action runs integration tests against any bootable container image.
 
 ## How it works
 
@@ -31,7 +31,11 @@ jobs:
       id-token: write
     strategy:
       fail-fast: false 
-    steps
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Run integration tests
         uses: secureblue/bootc-virtual-machine-action@6638202e094c8f30b06917ccdd3187a1e376cdb9 # v0.0.1
         with:          
@@ -53,7 +57,7 @@ jobs:
 | `image`                | Image name for the VM. Example: silverblue-main-hardened                       | string | Yes      | N/A             |
 | `tests`                | List of test scripts to execute on the VM via SSH after it boots.              | string | Yes      | N/A             |
 | `token`                | Github token                                                                   | string | Yes      | N/A             |
-| `vm-name`              | Name for the virtual machine and its disk in libvirt.                          | string | No       | `vm-bootc`     |
+| `vm-name`              | Name for the virtual machine and its disk in libvirt.                          | string | No       | `vm-bootc`      |
 | `vcpus`                | Number of virtual CPUs for the VM.                                             | number | No       | `3`             |
 | `memory-mb`            | Amount of RAM in MB for the VM.                                                | number | No       | `8192`          |
 | `disk-size-gb`         | Size (in GB) of the virtual machine disk.                                      | number | No       | `20`            |
