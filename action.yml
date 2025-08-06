@@ -113,8 +113,7 @@ runs:
         cosign generate-key-pair
         COSIGN_PRIVATE_KEY=$(< cosign.key)
 
-        CURRENT_PATH="$(pwd)"
-        INTEG_TEST_ACTION_PATH="$(pwd)/bootc-integration-test-action"
+        INTEG_TEST_ACTION_PATH="./bootc-integration-test-action"
         RECIPE_PATH="${INTEG_TEST_ACTION_PATH}/recipe.yml"
 
         TESTUUID=$(uuidgen)
