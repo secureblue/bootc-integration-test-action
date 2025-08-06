@@ -113,10 +113,8 @@ runs:
         cosign generate-key-pair
         COSIGN_PRIVATE_KEY=$(< cosign.key)
 
-        CURRENT_PATH="$(pwd)"
-        INTEG_TEST_ACTION_PATH="$(pwd)/bootc-integration-test-action"
+        INTEG_TEST_ACTION_PATH="./bootc-integration-test-action"
         RECIPE_PATH="${INTEG_TEST_ACTION_PATH}/recipe.yml"
-        cp -r "$INTEG_TEST_ACTION_PATH"/. "$CURRENT_PATH"
 
         TESTUUID=$(uuidgen)
 
@@ -125,9 +123,9 @@ runs:
         sed -i "s|%%TESTUUID%%|${TESTUUID}|g" "${RECIPE_PATH}"
 
 
+        cd "$INTEG_TEST_ACTION_PATH"
         BUILD_OPTS="--build-driver podman --push --squash"
         bluebuild build -v ${BUILD_OPTS} ${RECIPE_PATH}
-
         INTEGRATION_TEST_TAG="integrationtest-${TESTUUID}"
         echo "integration_test_tag=${INTEGRATION_TEST_TAG}" >> ${GITHUB_OUTPUT}
 
