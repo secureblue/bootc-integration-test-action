@@ -24,9 +24,12 @@ inputs:
     description: 'List of test scripts to execute on the VM via SSH after it boots. Exit code determines test status.'
     required: true
   token:
-    description: |
-      The token used to sign into the container registry.
+    description: 'The token used to sign into the container registry.'
     required: true
+  data-files:
+    description: 'List of data files to be copied to the VM via SSH after it boots.'
+    default: ''
+    required: false
   vm-name:
     description: 'Name for the virtual machine and its disk in libvirt.'
     default: 'vm-bootc'
@@ -188,6 +191,7 @@ runs:
       shell: bash
       env:
         TESTS: ${{ inputs.tests }}
+        DATA_FILES: ${{ inputs.data-files }}
       run: |
         echo "Running tests..."
 
@@ -204,6 +208,11 @@ runs:
         mkdir test-logs
         FAILED_TESTS=0
         SSH_OPTS="-o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519"
+
+        if [ -n "$DATA_FILES" ]; then
+          mapfile -t DATA_FILE_LIST <<< "$DATA_FILES"
+          scp $SSH_OPTS "${DATA_FILE_LIST[@]}" core@"$VM_IP":/home/core/
+        fi
 
         for TEST_FILE in "${TEST_LIST[@]}"; do
           if [ -z "$TEST_FILE" ]; then

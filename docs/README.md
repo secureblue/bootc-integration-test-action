@@ -20,7 +20,7 @@ name: integration-tests
 permissions: {}
 on:
   schedule:
-    - cron: "00 7 * * *" # run at 7:00 UTC every day 
+    - cron: "00 7 * * *" # run at 7:00 UTC every day
 jobs:
   integration-tests:
     name: Run integration tests
@@ -30,15 +30,15 @@ jobs:
       packages: write
       id-token: write
     strategy:
-      fail-fast: false 
+      fail-fast: false
     steps:
       - name: Checkout repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
       - name: Run integration tests
-        uses: secureblue/bootc-virtual-machine-action@6638202e094c8f30b06917ccdd3187a1e376cdb9 # v0.0.1
-        with:          
+        uses: secureblue/bootc-integration-test-action@05aa93d5e9d1e128c8d0772fd534fed5c73f9271 # v0.0.3
+        with:
           registry: ghcr.io/secureblue
           image: silverblue-main-hardened
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -57,6 +57,7 @@ jobs:
 | `image`                | Image name for the VM. Example: silverblue-main-hardened                       | string | Yes      | N/A             |
 | `tests`                | List of test scripts to execute on the VM via SSH after it boots.              | string | Yes      | N/A             |
 | `token`                | Github token                                                                   | string | Yes      | N/A             |
+| `data-files`           | List of data files to be copied to the VM via SSH after it boots.              | string | No       | (empty)         |
 | `vm-name`              | Name for the virtual machine and its disk in libvirt.                          | string | No       | `vm-bootc`      |
 | `vcpus`                | Number of virtual CPUs for the VM.                                             | number | No       | `3`             |
 | `memory-mb`            | Amount of RAM in MB for the VM.                                                | number | No       | `8192`          |
