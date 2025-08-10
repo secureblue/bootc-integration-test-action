@@ -206,7 +206,6 @@ runs:
 
         mapfile -t TEST_LIST < <(echo "$TESTS" | sed '/^[[:space:]]*$/d')
         mkdir test-logs
-        FAILED_TESTS=0
         SSH_OPTS="-o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519"
 
         if [ -n "$DATA_FILES" ]; then
@@ -214,6 +213,7 @@ runs:
           scp $SSH_OPTS "${DATA_FILE_LIST[@]}" core@"$VM_IP":/home/core/
         fi
 
+        FAILED_TESTS=0
         for TEST_FILE in "${TEST_LIST[@]}"; do
           echo "Running test: $TEST_FILE"
           BASENAME=$(basename "$TEST_FILE")
@@ -227,11 +227,11 @@ runs:
           set -e
           if [[ $TEST_EXIT_CODE -ne 0 ]]; then
             echo "Test $TEST_FILE failed"
-            (( FAILED_TESTS++ ))
+            (( ++FAILED_TESTS ))
           fi
         done
 
-        if [[ $FAILED_TESTS -gt 0 ]]; then
+        if (( $FAILED_TESTS > 0 )); then
           exit 1
         fi
 
