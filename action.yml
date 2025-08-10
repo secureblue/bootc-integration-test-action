@@ -204,20 +204,17 @@ runs:
         echo "Waiting for SSH port to be open on ${VM_IP}..."
         for i in {1..30}; do nc -z ${VM_IP} 22 && break || sleep 5; done
 
-        mapfile -t TEST_LIST <<< "$TESTS"
+        mapfile -t TEST_LIST < <(echo "$TESTS" | sed '/^[[:space:]]*$/d')
         mkdir test-logs
         FAILED_TESTS=0
         SSH_OPTS="-o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519"
 
         if [ -n "$DATA_FILES" ]; then
-          mapfile -t DATA_FILE_LIST <<< "$DATA_FILES"
+          mapfile -t DATA_FILE_LIST < <(echo "$DATA_FILES" | sed '/^[[:space:]]*$/d')
           scp $SSH_OPTS "${DATA_FILE_LIST[@]}" core@"$VM_IP":/home/core/
         fi
 
         for TEST_FILE in "${TEST_LIST[@]}"; do
-          if [ -z "$TEST_FILE" ]; then
-            continue
-          fi
           echo "Running test: $TEST_FILE"
           BASENAME=$(basename "$TEST_FILE")
           REMOTE_PATH="/home/core/${BASENAME}"
