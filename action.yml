@@ -72,12 +72,13 @@ runs:
     - name: 'Install Dependencies'
       shell: bash
       run: |
-        sudo apt-get update
-        sudo apt-get install -y passt qemu-system-x86 libvirt-daemon-system libvirt-clients virtinst podman apparmor-utils wget libguestfs-tools
+        sudo apt update
+        sudo apt install -y passt qemu-system-x86 libvirt-daemon-system libvirt-clients virtinst podman apparmor-utils wget libguestfs-tools
 
     - name: Install BlueBuild
       shell: bash
       run: |
+        docker pull --quiet ghcr.io/blue-build/cli:v0.9.20-installer
         docker create \
           --name blue-build-installer \
           ghcr.io/blue-build/cli:v0.9.20-installer
