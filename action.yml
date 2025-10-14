@@ -65,10 +65,14 @@ runs:
     - name: Free disk space
       shell: bash
       run: |
+        sudo find /usr/local/lib/android -delete || true
         sudo find /usr/share/dotnet -delete || true
         sudo find /opt/ghc -delete || true
         sudo find /usr/local/.ghcup -delete || true
+        sudo apt-get -y --ignore-missing --autoremove remove '^aspnetcore-.*' '^dotnet-.*' '^llvm-.*' 'php.*' '^mongodb-.*' '^mysql-.*' azure-cli google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri google-cloud-sdk google-cloud-cli || true
+        sudo apt-get clean || true
         sudo docker image prune --all --force > /dev/null || true
+        sudo find "$AGENT_TOOLSDIRECTORY" -delete || true
         sudo swapoff -a || true
         sudo rm -f /mnt/swapfile || true
 
