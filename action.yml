@@ -54,8 +54,27 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Maximize build space
-      uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+    - name: Optimize build times
+      shell: bash
+      run: |
+        echo 'set man-db/auto-update false' | sudo debconf-communicate
+        sudo dpkg-reconfigure man-db
+        sudo rm -f /var/lib/man-db/auto-update
+        sudo sed -i -e 's/^update_initramfs=.*/update_initramfs=no/' /etc/initramfs-tools/update-initramfs.conf
+
+    - name: Free disk space
+      shell: bash
+      run: |
+        sudo find /usr/local/lib/android -delete || true
+        sudo find /usr/share/dotnet -delete || true
+        sudo find /opt/ghc -delete || true
+        sudo find /usr/local/.ghcup -delete || true
+        sudo apt-get -y --ignore-missing --autoremove remove '^aspnetcore-.*' '^dotnet-.*' '^llvm-.*' 'php.*' '^mongodb-.*' '^mysql-.*' azure-cli google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri google-cloud-sdk google-cloud-cli || true
+        sudo apt-get clean || true
+        sudo docker image prune --all --force > /dev/null || true
+        sudo find "$AGENT_TOOLSDIRECTORY" -delete || true
+        sudo swapoff -a || true
+        sudo rm -f /mnt/swapfile || true
 
     - name: Checkout repository
       uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -64,7 +83,7 @@ runs:
         repository: secureblue/bootc-integration-test-action
         path: bootc-integration-test-action
 
-    - uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
+    - uses: sigstore/cosign-installer@d7543c93d881b35a8faa02e8e3605f69b7a1ce62 # v3.10.0
       with:
         install-dir: /usr/bin
         use-sudo: true
@@ -121,14 +140,14 @@ runs:
 
         TESTUUID=$(uuidgen)
 
-        sed -i "s|%%IMAGE%%|${IMAGE}|g" "${RECIPE_PATH}"
-        sed -i "s|%%REGISTRY%%|${REGISTRY}|g" "${RECIPE_PATH}"
-        sed -i "s|%%TESTUUID%%|${TESTUUID}|g" "${RECIPE_PATH}"
+        sed -i --sandbox -e "s|%%IMAGE%%|${IMAGE}|g" "${RECIPE_PATH}"
+        sed -i --sandbox -e "s|%%REGISTRY%%|${REGISTRY}|g" "${RECIPE_PATH}"
+        sed -i --sandbox -e "s|%%TESTUUID%%|${TESTUUID}|g" "${RECIPE_PATH}"
 
         BUILD_OPTS="--build-driver podman --push --squash"
-        bluebuild build -v ${BUILD_OPTS} ${RECIPE_PATH}
+        bluebuild build -v ${BUILD_OPTS} "${RECIPE_PATH}"
         INTEGRATION_TEST_TAG="integrationtest-${TESTUUID}"
-        echo "integration_test_tag=${INTEGRATION_TEST_TAG}" >> ${GITHUB_OUTPUT}
+        echo "integration_test_tag=${INTEGRATION_TEST_TAG}" >> "${GITHUB_OUTPUT}"
 
     - name: 'Create and Start VM'
       shell: bash
@@ -147,7 +166,7 @@ runs:
 
         PUBKEY=$(cat ~/.ssh/id_ed25519.pub)
         mv "./bootc-integration-test-action/config.toml" .
-        sed -i "s|%%PUBKEY%%|${PUBKEY}|g" ./config.toml
+        sed -i --sandbox -e "s|%%PUBKEY%%|${PUBKEY}|g" ./config.toml
         sudo podman run \
             --rm \
             -it \
@@ -203,7 +222,7 @@ runs:
 
         VM_IP="192.168.122.2"
         echo "Waiting for SSH port to be open on ${VM_IP}..."
-        for i in {1..30}; do nc -z ${VM_IP} 22 && break || sleep 5; done
+        for i in {1..30}; do nc -z "${VM_IP}" 22 && break || sleep 5; done
 
         mapfile -t TEST_LIST < <(echo "$TESTS" | sed '/^[[:space:]]*$/d')
         mkdir test-logs
@@ -217,16 +236,16 @@ runs:
         FAILED_TESTS=0
         for TEST_FILE in "${TEST_LIST[@]}"; do
           echo "Running test: $TEST_FILE"
-          BASENAME=$(basename "$TEST_FILE")
+          BASENAME="${TEST_FILE##*/}"
           REMOTE_PATH="/home/core/${BASENAME}"
           LOG_FILE="test-logs/${BASENAME}.log"
 
           scp $SSH_OPTS "$TEST_FILE" core@$VM_IP:"$REMOTE_PATH"
           set +e
-          ssh $SSH_OPTS core@$VM_IP "chmod +x $REMOTE_PATH && $REMOTE_PATH" > "$LOG_FILE" 2>&1
+          ssh $SSH_OPTS core@"$VM_IP" "chmod +x $REMOTE_PATH && $REMOTE_PATH" > "$LOG_FILE" 2>&1
           TEST_EXIT_CODE=$?
           set -e
-          if [[ $TEST_EXIT_CODE -ne 0 ]]; then
+          if (( TEST_EXIT_CODE != 0 )); then
             echo "Test $TEST_FILE failed"
             (( ++FAILED_TESTS ))
           fi
