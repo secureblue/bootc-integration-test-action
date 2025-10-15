@@ -21,10 +21,4 @@ systemctl enable sshd.service
 systemctl unmask sshd.socket
 systemctl enable sshd.socket
 
-systemctl unmask sshd-unix-local.socket
-systemctl enable sshd-unix-local.socket
-
-systemctl unmask sshd-keygen.target
-systemctl enable sshd-keygen.target
-
 chmod 600 /etc/NetworkManager/system-connections/static.nmconnection
