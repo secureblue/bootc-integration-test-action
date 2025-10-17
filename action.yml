@@ -220,18 +220,28 @@ runs:
           exit 1
         fi
 
+        readarray -t TEST_LIST < <(echo "$TESTS" | sed '/^[[:space:]]*$/d')
+        readarray -t DATA_FILE_LIST < <(echo "${DATA_FILES:-}" | sed '/^[[:space:]]*$/d')
+
         VM_IP="192.168.122.2"
         echo "Waiting for SSH port to be open on ${VM_IP}..."
-        for i in {1..30}; do nc -z "${VM_IP}" 22 && break || sleep 5; done
+        for i in {1..30}; do
+          if nc -z "${VM_IP}" 22; then
+            break
+          elif (( i == 30 )); then
+            echo "SSH port on ${VM_IP} is not open after 30 attempts. Giving up."
+            exit 1
+          fi
+          sleep 5
+        done
+        echo "SSH port is open on ${VM_IP}."
 
-        mapfile -t TEST_LIST < <(echo "$TESTS" | sed '/^[[:space:]]*$/d')
         mkdir test-logs
-        SSH_OPTS="-o ConnectTimeout=20 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519"
+        SSH_OPTS=(-o ConnectTimeout=20 -o StrictHostKeyChecking=no -i '~/.ssh/id_ed25519')
 
-        if [ -n "$DATA_FILES" ]; then
-          mapfile -t DATA_FILE_LIST < <(echo "$DATA_FILES" | sed '/^[[:space:]]*$/d')
-          scp $SSH_OPTS "${DATA_FILE_LIST[@]}" core@"$VM_IP":/home/core/
-        fi
+        echo 'Copying files to VM...'
+        scp "${SSH_OPTS[@]}" "${TEST_LIST[@]}" "${DATA_FILE_LIST[@]}" core@"$VM_IP":/home/core/
+        echo 'Done copying files to VM.'
 
         FAILED_TESTS=0
         for TEST_FILE in "${TEST_LIST[@]}"; do
@@ -240,18 +250,18 @@ runs:
           REMOTE_PATH="/home/core/${BASENAME}"
           LOG_FILE="test-logs/${BASENAME}.log"
 
-          scp $SSH_OPTS "$TEST_FILE" core@$VM_IP:"$REMOTE_PATH"
           set +e
-          ssh $SSH_OPTS core@"$VM_IP" "chmod +x $REMOTE_PATH && $REMOTE_PATH" > "$LOG_FILE" 2>&1
+          ssh "${SSH_OPTS[@]}" core@"$VM_IP" "chmod +x $REMOTE_PATH && $REMOTE_PATH" > "$LOG_FILE" 2>&1
           TEST_EXIT_CODE=$?
           set -e
+
           if (( TEST_EXIT_CODE != 0 )); then
             echo "Test $TEST_FILE failed"
             (( ++FAILED_TESTS ))
           fi
         done
 
-        if (( $FAILED_TESTS > 0 )); then
+        if (( FAILED_TESTS > 0 )); then
           exit 1
         fi
 
