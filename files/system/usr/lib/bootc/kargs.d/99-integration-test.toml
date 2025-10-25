@@ -1,0 +1,3 @@
+kargs = [
+    "console=ttyS0,115200",
+]
