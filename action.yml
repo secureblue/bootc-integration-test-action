@@ -149,13 +149,9 @@ runs:
         INTEGRATION_TEST_TAG="integrationtest-${TESTUUID}"
         echo "integration_test_tag=${INTEGRATION_TEST_TAG}" >> "${GITHUB_OUTPUT}"
 
-    - name: 'Create and Start VM'
+    - name: 'Create VM disk image'
       shell: bash
       env:
-        DISK_SIZE_GB: ${{ inputs.disk-size-gb }}
-        VM_NAME: ${{ inputs.vm-name }}
-        VCPU: ${{ inputs.vcpus }}
-        MEMORY_MB: ${{ inputs.memory-mb }}
         IMAGE: ${{ inputs.image }}
         REGISTRY: ${{ inputs.registry }}
         INTEGRATION_TEST_TAG: ${{ steps.build_test_image.outputs.integration_test_tag }}
@@ -184,8 +180,18 @@ runs:
             "$INTEGRATION_TEST_IMAGE"
 
         sudo mv output/qcow2/disk.qcow2 /var/lib/libvirt/images/
-        DISK_IMAGE_PATH="/var/lib/libvirt/images/disk.qcow2"
 
+    - name: 'Install and start VM'
+      shell: bash
+      env:
+        DISK_SIZE_GB: ${{ inputs.disk-size-gb }}
+        VM_NAME: ${{ inputs.vm-name }}
+        VCPU: ${{ inputs.vcpus }}
+        MEMORY_MB: ${{ inputs.memory-mb }}
+      run: |
+        DISK_IMAGE_PATH="/var/lib/libvirt/images/disk.qcow2"
+        mkdir test-logs
+        BOOT_LOG_PATH="$(realpath test-logs)/boot.log"
         sudo virt-install \
           --connect="qemu:///system" \
           --name="${VM_NAME}" \
@@ -195,6 +201,7 @@ runs:
           --graphics=none \
           --os-variant="silverblue-unknown" \
           --disk="size=${DISK_SIZE_GB},backing_store=${DISK_IMAGE_PATH}" \
+          --serial="file,path=${BOOT_LOG_PATH}" \
           --network network=default \
           --noautoconsole
 
@@ -236,7 +243,6 @@ runs:
         done
         echo "SSH port is open on ${VM_IP}."
 
-        mkdir test-logs
         SSH_OPTS=(-o ConnectTimeout=20 -o StrictHostKeyChecking=no -i '~/.ssh/id_ed25519')
 
         echo 'Copying files to VM...'
@@ -272,6 +278,12 @@ runs:
         token: ${{ inputs.token }}
         packages: ${{ inputs.image }}
         delete-tags: ${{ format('*{0}*', steps.build_test_image.outputs.integration_test_tag) }}
+
+    - name: Ensure test logs are readable
+      if: always()
+      shell: bash
+      run: |
+        sudo chmod -R a+r test-logs
 
     - name: Upload Test Logs
       if: always()
