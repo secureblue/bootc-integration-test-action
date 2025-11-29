@@ -63,18 +63,7 @@ runs:
         sudo sed -i -e 's/^update_initramfs=.*/update_initramfs=no/' /etc/initramfs-tools/update-initramfs.conf
 
     - name: Free disk space
-      shell: bash
-      run: |
-        sudo find /usr/local/lib/android -delete || true
-        sudo find /usr/share/dotnet -delete || true
-        sudo find /opt/ghc -delete || true
-        sudo find /usr/local/.ghcup -delete || true
-        sudo apt-get -y --ignore-missing --autoremove remove '^aspnetcore-.*' '^dotnet-.*' '^llvm-.*' 'php.*' '^mongodb-.*' '^mysql-.*' azure-cli google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri google-cloud-sdk google-cloud-cli || true
-        sudo apt-get clean || true
-        sudo docker image prune --all --force > /dev/null || true
-        sudo find "$AGENT_TOOLSDIRECTORY" -delete || true
-        sudo swapoff -a || true
-        sudo rm -f /mnt/swapfile || true
+      uses: hastd/free-disk-space@5c7d2a3a2111207998da95cb27f78ef9d5982abd # v0.1.0
 
     - name: Checkout repository
       uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
