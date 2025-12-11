@@ -63,7 +63,7 @@ runs:
         sudo sed -i -e 's/^update_initramfs=.*/update_initramfs=no/' /etc/initramfs-tools/update-initramfs.conf
 
     - name: Free disk space
-      uses: hastd/free-disk-space@5c7d2a3a2111207998da95cb27f78ef9d5982abd # v0.1.0
+      uses: hastd/free-disk-space@78ec0490f953d89f024c95d0c293e6307ceac02e # v0.1.1
 
     - name: Checkout repository
       uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
