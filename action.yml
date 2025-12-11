@@ -86,10 +86,10 @@ runs:
     - name: Install BlueBuild
       shell: bash
       run: |
-        docker pull --quiet ghcr.io/blue-build/cli:v0.9.20-installer
+        docker pull --quiet ghcr.io/blue-build/cli:v0.9.27-installer
         docker create \
           --name blue-build-installer \
-          ghcr.io/blue-build/cli:v0.9.20-installer
+          ghcr.io/blue-build/cli:v0.9.27-installer
         docker cp blue-build-installer:/out/bluebuild /usr/local/bin/bluebuild
         docker rm blue-build-installer
         bluebuild --version
