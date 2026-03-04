@@ -64,6 +64,8 @@ runs:
 
     - name: Free disk space
       uses: hastd/free-disk-space@68572aeaadb7f76bd408246328e95926323402b5 # v0.1.2
+      with:
+        skip-if-available: "64G"
 
     - name: Checkout repository
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
