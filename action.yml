@@ -264,7 +264,7 @@ runs:
 
     - name: Cleanup integration test image
       if: startsWith(steps.build_test_image.outputs.integration_test_tag, 'integrationtest-')
-      uses: dataaxiom/ghcr-cleanup-action@374e2028c8fb93b7219f3771cd405fab95d3dec4 # v1.2.0
+      uses: dataaxiom/ghcr-cleanup-action@f092b48ba3b604b2a83690dc4b2bbb3392e1045f # v1.2.1
       with:
         token: ${{ inputs.token }}
         packages: ${{ inputs.image }}
