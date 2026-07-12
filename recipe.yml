@@ -1,18 +1,22 @@
-name: %%IMAGE%%
+# SPDX-FileCopyrightText: (c) 2025-2026 The Secureblue Authors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: "%%IMAGE%%"
 
 description: "Integration testing"
 
-base-image: %%REGISTRY%%/%%IMAGE%%
+base-image: "%%REGISTRY%%/%%IMAGE%%"
 
 image-version: latest
 
-alt-tags: 
-  - integrationtest-%%TESTUUID%%
+alt-tags:
+  - "integrationtest-%%TESTUUID%%"
 
 modules:
   - type: files
     files:
-      - source: system  
+      - source: system
         destination: /
   - type: script
     scripts:
